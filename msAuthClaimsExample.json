@@ -1,0 +1,83 @@
+{
+  "auth_typ": "aad",
+  "claims": [
+    {
+      "typ": "aud",
+      "val": "guid"
+    },
+    {
+      "typ": "iss",
+      "val": "https://login.microsoftonline.com/{tenantId}/v2.0"
+    },
+    {
+      "typ": "iat",
+      "val": "1717570643"
+    },
+    {
+      "typ": "nbf",
+      "val": "number"
+    },
+    {
+      "typ": "exp",
+      "val": "number"
+    },
+    {
+      "typ": "aio",
+      "val": "randomstring"
+    },
+    {
+      "typ": "c_hash",
+      "val": "randomstring"
+    },
+    {
+      "typ": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+      "val": "per.son@domain.no"
+    },
+    {
+      "typ": "name",
+      "val": "Per Son"
+    },
+    {
+      "typ": "nonce",
+      "val": "noncevalue"
+    },
+    {
+      "typ": "http://schemas.microsoft.com/identity/claims/objectidentifier",
+      "val": "entra id object id for user"
+    },
+    {
+      "typ": "preferred_username",
+      "val": "per.son@domain.no"
+    },
+    {
+      "typ": "rh",
+      "val": "randomgreier"
+    },
+    {
+      "typ": "roles",
+      "val": "MinElev.Larer"
+    },
+    {
+      "typ": "roles",
+      "val": "MinElev.Admin"
+    },
+    {
+      "typ": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+      "val": "etellerannet"
+    },
+    {
+      "typ": "http://schemas.microsoft.com/identity/claims/tenantid",
+      "val": "tenantId"
+    },
+    {
+      "typ": "uti",
+      "val": "noegreier"
+    },
+    {
+      "typ": "ver",
+      "val": "2.0"
+    }
+  ],
+  "name_typ": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+  "role_typ": "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+}
