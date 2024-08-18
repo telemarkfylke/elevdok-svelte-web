@@ -10,10 +10,6 @@
 	let numberOfPages = Math.ceil(data.students.length / studentsPerPage)
 	let students = data.students
 	let originalStudents = JSON.parse(JSON.stringify(data.students))
-	let studentMenus = {}
-	students.forEach(student => {
-		studentMenus[student.elevnummer] = false
-	})
 	let searchValue
 
 	const search = (searchValue) => {
