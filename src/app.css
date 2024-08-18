@@ -126,7 +126,7 @@ button, a.button {
 	border: 1px solid var(--primary-color);
 	border-radius: 2rem;
 	min-height: 3rem;
-	padding: var(--spacing-small) var(--spacing-large);
+	padding: 0px var(--spacing-large);
 	cursor: pointer;
 	text-decoration: none; /* Remove from link button (a) */
 	box-sizing: border-box; /* To make link button the same size as regular button */
@@ -190,7 +190,7 @@ button.link {
   text-decoration: underline;
 	padding: 0rem;
 	border: 0px;
-	height: auto;
+	min-height: auto;
 	background-color: inherit;
 }
 

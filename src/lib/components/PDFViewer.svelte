@@ -2,6 +2,7 @@
 
   export let base64Data
   export let showPdf = false
+  export let title = "Tittel her"
   export let closePdf = () => {
     showPdf = false
   }
@@ -19,7 +20,10 @@
 <dialog bind:this={previewModal}>
   <form method="dialog">
     <div class="modalTitle">
-      <h2>Tittel her</h2>
+      <div>
+        <h2>{title}</h2>
+        <div style="color: var(--error-color);">Ikke last ned, skriv ut, eller ta skjermbilde av dokumentet.</div>
+      </div>
       <button on:click={closePdf} title="Lukk modal"><span class="material-symbols-outlined">close</span>Lukk</button>
     </div>
     <div class="rawData">
@@ -27,7 +31,7 @@
         {#await b64toBlob(base64Data, 'application/pdf')}
           Laster pdf...
         {:then blobResponse}
-            <object aria-label="PDF viewer" class="pdf-preview" data='{URL.createObjectURL(blobResponse)}#toolbar=0&navpanes=0&zoom=150'>
+            <object aria-label="PDF viewer" class="pdf-preview" data='{URL.createObjectURL(blobResponse)}#toolbar=0&navpanes=0&zoom=100'>
               <p>Din nettleser støtter ikke PDF-visning</p>
             </object>
         {:catch err}
@@ -44,11 +48,11 @@
 <style>
   object {
     width: 100%;
-    min-height: 50rem;
+    min-height: 80vh;
   }
   dialog {
-    width: 80vw;
-    height: 80vh;
+    width: 90vw;
+    height: 90vh;
     margin: auto;
     border: none;
     padding: 32px

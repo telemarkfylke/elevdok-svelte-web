@@ -6,6 +6,7 @@
   import { page } from '$app/stores'
   import { navigating } from '$app/stores'
   import { clickOutside } from '$lib/helpers/click-outside'
+  import { goto } from '$app/navigation';
 
   /** @type {import('./$types').PageData} */
 	export let data
@@ -52,11 +53,13 @@
       href: '/elever',
       icon: 'person'
     },
+    /*
     {
       title: 'Hjelp',
       href: '/hjelp',
       icon: 'help'
-    },
+    }
+    */
   ]
 
   if (data.user.hasAdminRole) {
@@ -107,16 +110,16 @@
         <!-- Note the position: relative style -->
         <button class="action{showUsermenu ? ' cheatActive' : ''}" on:click={() => {showUsermenu = !showUsermenu}} use:clickOutside on:click_outside={() => {showUsermenu = false}}>
           <span class="material-symbols-outlined">more_vert</span>
-          <div class="userMenu{!showUsermenu ? ' hidden' : ''}">
-            {#each getAvailableRoles(data.user.roles, data.user.activeRole) as availableRole}
-              <form method="POST" action="/?/changeActiveRole">
-                <input type="hidden" value="{availableRole.value}" name="active_role" />
-                <button type="submit" class="blank userMenuOption inward-focus-within">Bytt til rolle: {availableRole.roleName}</button>
-              </form>
-            {/each}
-            <button class="blank userMenuOption inward-focus-within">Logg ut</button> <!--TODO legg inn logg ut funksjonalitet-->
-          </div>
         </button>
+        <div class="userMenu{!showUsermenu ? ' hidden' : ''}">
+          {#each getAvailableRoles(data.user.roles, data.user.activeRole) as availableRole}
+            <form method="POST" action="/?/changeActiveRole">
+              <input type="hidden" value="{availableRole.value}" name="active_role" />
+              <button type="submit" class="blank userMenuOption inward-focus-within">Bytt til rolle: {availableRole.roleName}</button>
+            </form>
+          {/each}
+          <button class="blank userMenuOption inward-focus-within" on:click={() => goto('/.auth/logout')}>Logg ut</button> <!--TODO legg inn logg ut funksjonalitet-->
+        </div>
       </div>
     </div>
     <div class="pathtracker">

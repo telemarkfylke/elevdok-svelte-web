@@ -15,7 +15,7 @@
 
 <div>
   {JSON.stringify(data.studentDocuments.errors)}
-  {#each data.studentDocuments.documents as document}
-    <Document {document} />
+  {#each data.studentDocuments.documents as document, index}
+    <Document {document} currentIndex={index} />
   {/each}
 </div>

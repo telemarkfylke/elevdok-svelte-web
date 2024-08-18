@@ -27,9 +27,10 @@ export const repackP360Document = (document, feidenavn, source, sourceName) => {
     files: document.Files.map(file => {
       return {
         id: file.Recno,
-        title: file.Title,
+        title: file.Title.endsWith(file.Format.toLowerCase) ? file.Title : `${file.Title}.${file.Format.toLowerCase()}`,
         relation: file.RelationTypeDescription,
-        format: file.Format
+        format: file.Format,
+        isAvailable: file.Format.toLowerCase() === 'pdf'
       }
     })
   }
@@ -119,5 +120,11 @@ export const getAzfArchiveFile = async (fileId, loggerPrefix) => {
     }
   }
   const { data } = await axios.post(`${env.AZF_ARCHIVE_URL}/Archive`, filePayload, { headers: { Authorization: `Bearer ${accessToken}`} })
-  return { base64: data.Base64Data }
+  return {
+    base64: data.Base64Data,
+    metadata: {
+      title: data.Title,
+      documentNumber: data.DocumentNumber
+    }
+  }
 }

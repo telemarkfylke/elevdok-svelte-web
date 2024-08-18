@@ -1,3 +1,5 @@
+import { repackP360Document } from "./azf-archive"
+
 const randomOfficialTitles = ['Kompetansebevis', 'Vitnemål', 'Lærekontrakt', 'IOP', 'Dokumentasjon på bestått fagprøve']
 const randomNames = ['Elev Elevesen', 'Gunnar Greve', 'Max Mekker']
 const categories = [
@@ -20,13 +22,14 @@ const categories = [
 const statusCodes = ['J', 'F', 'E', 'A']
 const caseStatuses = ['Under behandling', 'Avsluttet'] // reminder
 const documentArchives = ['Elevdokument', 'Sensitivt elevdokument']
+const fileFormats = ['PDF', 'pdf', 'xlsx', 'DOCX']
 
 const randomValue = (list) => {
   const randomNumber = Math.floor(Math.random() * (list.length))
   return list[randomNumber]
 }
 
-export const getMockDocuments = (numberOfDocuments = 10) => {
+export const getMockDocuments = (teacherStudent, loggerPrefix, numberOfDocuments = 10) => {
   const documents = []
   for (const number of Array.from(Array(numberOfDocuments).keys())) {
     const document = {
@@ -99,7 +102,7 @@ export const getMockDocuments = (numberOfDocuments = 10) => {
         {
           Recno: 411732,
           Title: `${randomValue(randomOfficialTitles)} - Elev Elevesen`,
-          Format: 'PDF',
+          Format: randomValue(fileFormats),
           Base64Data: null,
           URL: 'https://mordor.no',
           RelationTypeDescription: 'Hoveddokument',
@@ -134,7 +137,7 @@ export const getMockDocuments = (numberOfDocuments = 10) => {
         {
           Recno: 411732,
           Title: `${randomValue(randomOfficialTitles)} - Elev Elevesen`,
-          Format: 'PDF',
+          Format: randomValue(fileFormats),
           Base64Data: null,
           URL: 'https://mordor.no',
           RelationTypeDescription: 'Vedlegg',
@@ -196,7 +199,10 @@ export const getMockDocuments = (numberOfDocuments = 10) => {
     }
     documents.push(document)
   }
-  return documents
+
+  // Repack before returning
+  const repacked = documents.map(document => repackP360Document(document, teacherStudent.feidenavn, 'mock', 'MockeArkiv'))
+  return repacked
 }
 
 export const mockFile = { base64: 'JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAvTWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSIAogICAgPj4KICA+PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9udAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2JqCgo1IDAgb2JqICAlIHBhZ2UgY29udGVudAo8PAogIC9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9GMSAxMiBUZgooSGVsbG8sIHdvcmxkISkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNzkgMDAwMDAgbiAKMDAwMDAwMDE3MyAwMDAwMCBuIAowMDAwMDAwMzAxIDAwMDAwIG4gCjAwMDAwMDAzODAgMDAwMDAgbiAKdHJhaWxlcgo8PAogIC9TaXplIDYKICAvUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKNDkyCiUlRU9G' }

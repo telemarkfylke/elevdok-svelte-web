@@ -18,7 +18,7 @@ export const sleep = (ms) => {
   })
 }
 
-const allowedUndervisningsforholdDescription = ['Adjunkt', 'Adjunkt m/till utd', 'Adjunkt 1', 'Lærer', 'Lektor', 'Lektor m/till utd', 'Lektor 1']
+const allowedUndervisningsforholdDescription = ['Adjunkt', 'Adjunkt m/till utd', 'Adjunkt 1', 'Lærer', 'Lærer-', 'Lektor', 'Lektor m/till utd', 'Lektor 1']
 
 const getSchoolYearFromDate = (date, delimiter = '/') => {
   // Hvis vi er etter 15 juli inneværende år, så swapper vi til current/next. Ellers bruker vi previous/current
@@ -202,46 +202,56 @@ export const getStudentDocuments = async (user, studentFeidenavn) => {
   const teacherStudent = availableStudents.find(stud => stud.feidenavn === studentFeidenavn)
   logger('info', [loggerPrefix, 'Access to student validated'])
 
-  if (env.MOCK_API === 'true') {
-    logger('info', [loggerPrefix, 'MOCK_API is true', 'Returning mock documents'])
-    const documents = await getMockDocuments(10)
-    documents.forEach(doc => {
-      doc.feidenavn = studentFeidenavn
-      doc.source = 'mock'
-      doc.Files.forEach(file => file.id = 1)
-    })
-    return { errors: [], documents }
-  }
   const result = {
     documents: [],
     errors: []
   }
-  // XFYLKE (mainArchive)
-  try {
-    logger('info', [loggerPrefix, 'Fetching student documents from main archive'])
-    const { documents, errors} = await getAzfArchiveDocuments(teacherStudent.fodselsnummer, studentFeidenavn, loggerPrefix)
-    logger('info', [loggerPrefix, `Got ${documents.length} student documents from main archive`])
+
+  if (env.MOCK_API === 'true') {
+    logger('info', [loggerPrefix, 'MOCK_API is true', 'Returning mock documents'])
+    const documents = getMockDocuments(teacherStudent, loggerPrefix, 300)
     result.documents.push(...documents)
-    result.errors.push(...errors)
-  } catch (error) {
-    logger('error', [loggerPrefix, 'Failed when fetching documents from main archive', error.response?.data || error.stack || error.toString()])
+  } else {
+    // XFYLKE (mainArchive)
+    try {
+      logger('info', [loggerPrefix, 'Fetching student documents from main archive'])
+      const { documents, errors} = await getAzfArchiveDocuments(teacherStudent.fodselsnummer, studentFeidenavn, loggerPrefix)
+      logger('info', [loggerPrefix, `Got ${documents.length} student documents from main archive`])
+      result.documents.push(...documents)
+      result.errors.push(...errors)
+    } catch (error) {
+      logger('error', [loggerPrefix, 'Failed when fetching documents from main archive', error.response?.data || error.stack || error.toString()])
+    }
+    // VTFK
+    // To be implemented
   }
-  // VTFK
-  // To be implemented
 
   logger('info', [loggerPrefix, `Adding viewFiles permission to all ${result.documents.length} documents' files, for easier frontend handling`])
-  const hasFileAccess = hasFileAccessForStudent(teacherStudent, loggerPrefix)
+  const { access, type } = hasFileAccessForStudent(teacherStudent, loggerPrefix)
   result.documents = result.documents.map(doc => {
     return {
       ...doc,
       files: doc.files.map(file => {
         return {
           ...file,
-          canView: hasFileAccess
+          canView: access
         }
       })
     }
   })
+
+  // Create log element
+  logger('info', [loggerPrefix, `Got ${result.documents.length} - creating logEntry`])
+  const logData = {
+    user,
+    teacherStudent,
+    accessType: type,
+    action: `Åpnet oversikten over elevens dokumenter`
+  }
+  const logEntryId = await createUserLogEntry(logData, loggerPrefix)
+  logger('info', [loggerPrefix, `LogEntry with id ${logEntryId.insertedId} successfully created, returning file`])
+
+
 
   return result
 }
@@ -286,49 +296,57 @@ export const getFile = async (user, studentFeidenavn, sourceId, fileId) => {
 
   // Sjekk også at bruker har tilgang til å faktisk åpne filen!! Basert på ENV-variabler
   logger('info', [loggerPrefix, 'Validating access to files for student'])
-  const hasFileAccess = hasFileAccessForStudent(teacherStudent, loggerPrefix)
+  const { access, type } = hasFileAccessForStudent(teacherStudent, loggerPrefix)
 
-  if (!hasFileAccess) {
+  if (!access) {
     logger('warn', [loggerPrefix, 'Teacher does NOT have access to files for student'])
     throw error(401, 'Du har ikke tilgang på å se dette dokumentet')
   } else {
-    logger('info', [loggerPrefix, 'Validated access to files for student'])
+    logger('info', [loggerPrefix, `Validated access to files for student - accessType: ${type}`])
   }
+
+  const result = {
+    base64: null,
+    metadata: null
+  }
+  logger('info', [loggerPrefix, `Fetching file from source ${sourceId}`])
 
   if (env.MOCK_API === 'true') {
     logger('info', [loggerPrefix, 'MOCK_API is true', 'Returning mock file'])
     const { base64 } = mockFile
-    return base64
-  }
-
-  logger('info', [loggerPrefix, `Fetching file from source ${sourceId}`])
-  if (sourceId === 'mainArchive') {
+    result.base64 = base64
+    result.metadata = {
+      title: 'Mocke-fil',
+      documentNumber: '24/mock1234'
+    }
+  } else if (sourceId === 'mainArchive') {
     try {
-      const { base64 } = await getAzfArchiveFile(fileId, loggerPrefix)
-      return base64
+      const { base64, metadata } = await getAzfArchiveFile(fileId, loggerPrefix)
+      result.base64 = base64
+      result.metadata = metadata
     } catch (error) {
       logger('error', [loggerPrefix, `Failed when fetching file (${fileId}) from mainArchive`, error.response?.data || error.stack || error.toString()])
       throw new Error('No access to student, or student is not registered')
     }
+  } else if (env.VTFK_ARCHIVE_ENABLED === 'true' && sourceId === 'vtfk') {
+    // implement
   }
-  if (sourceId = 'vtfk') {
-    // IMPLEMENT
-  }
-}
-
-export const getTeacherDocuments = async (user, studentFeidenavn) => {
-  if (env.MOCK_API === 'true') return 'en liste med tulledokumenter'
-  try {
-    const mongoClient = await getMongoClient()
-    const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_DOCUMENTS_COLLECTION}-${getCurrentSchoolYear('-')}`)
-    // Her må vi lage en spørring som henter dokumenter som matcher alle elevene til læreren, men vi tar vel kanskje panskje med en top-parameter for å være flinke?
-  } catch (error) {
-    if (error.toString().startsWith('MongoTopologyClosedError')) {
-      logger('warn', 'Oh no, topology is closed! Closing client')
-      closeMongoClient()
+  logger('info', [loggerPrefix, `Got base64file - creating logEntry`])
+  const logData = {
+    user,
+    teacherStudent,
+    accessType: type,
+    action: `Åpnet filen ${result.metadata.title} i dokument ${result.metadata.documentNumber}`,
+    file: {
+      ...result.metadata,
+      sourceId,
+      id: fileId
     }
-    throw error
   }
+  const logEntryId = await createUserLogEntry(logData, loggerPrefix)
+  logger('info', [loggerPrefix, `LogEntry with id ${logEntryId.insertedId} successfully created, returning file`])
+  
+  return result.base64
 }
 
 export const getActiveRole = async (principalId) => {
@@ -422,4 +440,145 @@ export const deleteAdminImpersonation = (user) => {
   if (!user.hasAdminRole) throw new Error('You do not have permission to do this')
   const internalCache = getInternalCache()
   internalCache.del(`${user.principalId}-impersonation`)
+}
+
+const createUserLogEntry = async (logData, loggerPrefix) => {
+  const { user, teacherStudent, accessType, action, file } = logData
+  if (!action) throw new Error('Missing required parameter "action"')
+  if (!user) throw new Error('Missing required parameter "user"')
+  if (!teacherStudent) throw new Error('Missing required parameter "teacherStudent"')
+  if (!accessType) throw new Error('Missing required parameter "accessType"')
+  if (!loggerPrefix) throw new Error('Missing required parameter "loggerPrefix"')
+
+  if (file) {
+    if (!file.id) throw new Error('Missing required parameter "file.id"')
+    if (!file.title) throw new Error('Missing required parameter "file.title"')
+    if (!file.documentNumber) throw new Error('Missing required parameter "file.documentNumber"')
+    if (!file.sourceId) throw new Error('Missing required parameter "file.sourceId"')
+  }
+
+  logger('info', [loggerPrefix, 'Creating logEntry'])
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    user: {
+      principalName: user.principalName,
+      principalId: user.principalId,
+      name: user.name,
+      role: user.activeRole,
+      hasAdminRole: user.hasAdminRole,
+      impersonating: user.impersonating || null
+    },
+    student: {
+      name: teacherStudent.navn,
+      feidenavn: teacherStudent.feidenavn,
+      elevnummer: teacherStudent.elevnummer
+    },
+    accessType,
+    action,
+    file: file || null
+  }
+  if (env.MOCK_API === 'true') {
+    logger('info', [loggerPrefix, `MOCK_API is true, adding logEntry to mockDb`])
+    const mockDb = getMockDb()
+    logEntry.type = 'logElement'
+    const randomId = new ObjectId().toString()
+    logEntry._id = randomId
+    mockDb.set(randomId, logEntry)
+    logger('info', [loggerPrefix, `MOCK_API is true, document successfully added to mockDb with id: ${randomId}`])
+    return { insertedId: randomId }
+  }
+  logger('info', [loggerPrefix, `Inserting logEntry in db`])
+  try {
+    const mongoClient = await getMongoClient()
+    const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)
+    const insertLogResult = await collection.insertOne(logEntry)
+    logger('info', [loggerPrefix, `LogEntry successfully inserted: ${insertLogResult.insertedId}`])
+    return insertLogResult
+  } catch (error) {
+    if (error.toString().startsWith('MongoTopologyClosedError')) {
+      logger('warn', 'Oh no, topology is closed! Closing client')
+      closeMongoClient()
+    }
+    throw error
+  }
+}
+
+export const getUserLogs = async (user, searchValue = '') => {
+  const loggerPrefix = `getUserLogs - user: ${user.principalName} - searchValue: ${searchValue}`
+  if (!user.hasAdminRole) {
+    logger('warn', [loggerPrefix, 'Missing required admin access to get user logs'])
+    throw new Error('You do not have permission to do this')
+  }
+  logger('info', [loggerPrefix, 'Getting user logs from db'])
+  if (env.MOCK_API === 'true') {
+    logger('info', [loggerPrefix, 'MOCK_API is true, getting logs from mockDb'])
+    const userLogs = []
+    const mockDb = getMockDb()
+    const dbKeys = mockDb.keys()
+    for (const key of dbKeys) {
+      const logElement = mockDb.get(key)
+      if (!logElement.type === 'logElement') continue
+      // If searchValue, check for matches
+      if (searchValue) {
+        console.log(typeof searchValue)
+        logger('info', [loggerPrefix, `searchValue: ${searchValue}`, 'checking for matches'])
+        if (logElement.user.name.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.user.principalName.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.user.principalId === searchValue) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.user.impersonating && logElement.user.impersonating.target.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.student.name.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.student.feidenavn.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.file && logElement.file.documentNumber.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.file && logElement.file.title.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+        if (logElement.file && logElement.file.id.toLowerCase() === searchValue.toLowerCase()) {
+          userLogs.push(logElement)
+          continue
+        }
+      } else {
+        // If not searchValue, return all top 30 or something
+        userLogs.push(logElement)
+      }
+    }
+    logger('info', [loggerPrefix, 'MOCK_API is true', `Found ${userLogs.length} log entries in mockdb - returning`])
+    return userLogs.sort((a, b) => { return new Date(b.timestamp) - new Date(a.timestamp) })
+  }
+  // Get top 50 logs from mongodb
+  try {
+    const mongoClient = await getMongoClient()
+    const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)
+    // IMPLEMENT SEARCH FUNCTION AS WELL
+    const top50 = await collection.find().sort({ _id: -1 }).limit(50).toArray() // sort({_id:-1}) returns newest first
+    logger('info', [loggerPrefix, `Found ${top50.length} recent log entries - returning`])
+    return top50
+  } catch (error) {
+    if (error.toString().startsWith('MongoTopologyClosedError')) {
+      logger('warn', 'Oh no, topology is closed! Closing client')
+      closeMongoClient()
+    }
+    throw error
+  }
 }

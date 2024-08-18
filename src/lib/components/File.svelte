@@ -32,17 +32,19 @@
   }
 </script>
 
-{#if fileLoading}
-  <button disabled><LoadingSpinner width={"1.5"} />{file.title}</button>
-{:else}
-  {#if !file.canView}
-    <button disabled><span class="material-symbols-outlined">block</span>{file.title}<br />Du har ikke tilgang til filen</button>
-  {:else if (!file.isAvailable)}
-    <button disabled><span class="material-symbols-outlined">block</span>{file.title}<br />Kun tilgjengelig i arkiv</button>
+<div class="fileContainer">
+  {#if fileLoading}
+    <button class="link" disabled><LoadingSpinner width={"1.5"} />{file.title}</button>
   {:else}
-    <button on:click={() => {getFileData()}}><span class="material-symbols-outlined">picture_as_pdf</span>{file.title}</button>
+    {#if !file.canView}
+      <span class="material-symbols-outlined">block</span><button class="link" disabled>{file.title}</button><span>Du har ikke tilgang til filen</span>
+    {:else if (!file.isAvailable)}
+      <span class="material-symbols-outlined">block</span><button class="link" disabled>{file.title}</button><span>Kun tilgjengelig i arkiv</span>
+    {:else}
+      <span class="material-symbols-outlined">picture_as_pdf</span><button class="link" on:click={() => {getFileData()}}>{file.title}</button>
+    {/if}
   {/if}
-{/if}
+</div>
 
 {#if errorMessage}
   <div class="error-box">
@@ -51,9 +53,13 @@
   </div>
 {/if}
 
-<PDFViewer showPdf={displayFile} {base64Data} closePdf={() => {displayFile = false}} />
+<PDFViewer title={file.title} showPdf={displayFile} {base64Data} closePdf={() => {displayFile = false}} />
 
 
 <style>
-
+  .fileContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 </style>
