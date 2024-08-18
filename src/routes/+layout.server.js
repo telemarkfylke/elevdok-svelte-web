@@ -11,8 +11,10 @@ export async function load ({ request }) {
 
     // If maintenance no need to return data
     if (env.MAINTENANCE_MODE === 'true') {
-      result.maintenanceMode = true
-      return result
+      return {
+        user,
+        maintenanceMode: true
+      }
     }
 
     const userData = await getUserData(user)
