@@ -583,7 +583,7 @@ function makeid (length) {
   return result
 }
 
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 2000; i++) {
   mockTeacher.undervisningsforhold[0].undervisningsgrupper[0].elever.push(
     {
       navn: makeid(5),
@@ -596,7 +596,7 @@ for (let i = 0; i < 100; i++) {
     }
   )
 }
-  */
+*/
 
 /**
  *

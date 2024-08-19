@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private'
 import { getUserData } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
+import { getSystemInfo } from '$lib/system-info'
 import { error } from '@sveltejs/kit'
 import { logger } from '@vtfk/logger'
 
@@ -18,10 +19,12 @@ export async function load ({ request }) {
     }
 
     const userData = await getUserData(user)
-
+    const systemInfo = getSystemInfo()
+    
     return {
+      systemInfo,
       user,
-      ...userData
+      ...userData,
     }
   } catch (err) {
     logger('error', ['Could not get data...', err.response?.data || err.stack || err.toString()])
