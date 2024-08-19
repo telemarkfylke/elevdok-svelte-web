@@ -90,12 +90,18 @@ export const getUserData = async (user, maskSsn = true) => {
     const validUndervisningsforhold = teacher.undervisningsforhold.filter(forhold => forhold.aktiv && allowedUndervisningsforholdDescription.includes(forhold.beskrivelse))
     const invalidUndervisningsforhold = teacher.undervisningsforhold.filter(forhold => forhold.aktiv && !allowedUndervisningsforholdDescription.includes(forhold.beskrivelse))
     if (invalidUndervisningsforhold.length > 0) {
-      for (const invalid of invalidUndervisningsforhold) { 
-        logger('warn', [loggerPrefix, `Teacher has invalid undervisningforhold description: ${invalid.beskrivelse} (${invalid.systemId}) - no access to students in this undervisningsforhold`])
-        userData.invalidUndervisningsforhold.push({ beskrivelse: invalid.beskrivelse, systemId: invalid.systemId })
+      for (const invalid of invalidUndervisningsforhold) {
+        let hasElever = false
+        if (invalid.basisgrupper.some(gruppe => Array.isArray(gruppe.elever) && gruppe.elever.length > 0)) hasElever = true
+        if (invalid.kontaktlarergrupper.some(gruppe => Array.isArray(gruppe.elever) && gruppe.elever.length > 0)) hasElever = true
+        if (invalid.undervisningsgrupper.some(gruppe => Array.isArray(gruppe.elever) && gruppe.elever.length > 0)) hasElever = true
+        if (hasElever) {
+          logger('warn', [loggerPrefix, `Teacher has invalid undervisningforhold description: ${invalid.beskrivelse} (${invalid.systemId}) with elevforhold in undervisningsforhold - no access to students in this undervisningsforhold`])
+          userData.invalidUndervisningsforhold.push({ beskrivelse: invalid.beskrivelse, systemId: invalid.systemId })
+        }
       }
     }
-    logger('info', [loggerPrefix, `Validating undervsiningsforhold description - ${validUndervisningsforhold.length} valid undervisningsforhold`])
+    logger('info', [loggerPrefix, `Validated undervsiningsforhold description - ${validUndervisningsforhold.length} valid undervisningsforhold`])
 
     // Kontaktlærer flyttes fra rett på eleven til skolearrayet på eleven - sett om læreren er kontaktlærer for eleven på gitt skole
     let students = []
@@ -211,6 +217,7 @@ export const getStudentDocuments = async (user, studentFeidenavn) => {
     logger('info', [loggerPrefix, 'MOCK_API is true', 'Returning mock documents'])
     const documents = getMockDocuments(teacherStudent, loggerPrefix, 300)
     result.documents.push(...documents)
+    result.errors.push('Bare en mocke-feil for å se hvordan det ser ut')
   } else {
     // XFYLKE (mainArchive)
     try {
@@ -240,6 +247,9 @@ export const getStudentDocuments = async (user, studentFeidenavn) => {
     }
   })
 
+  // Sort documents - newest first
+  result.documents = result.documents.sort((a, b) => { return new Date(b.documentDate) - new Date(a.documentDate) })
+
   // Create log element
   logger('info', [loggerPrefix, `Got ${result.documents.length} - creating logEntry`])
   const logData = {
@@ -250,8 +260,6 @@ export const getStudentDocuments = async (user, studentFeidenavn) => {
   }
   const logEntryId = await createUserLogEntry(logData, loggerPrefix)
   logger('info', [loggerPrefix, `LogEntry with id ${logEntryId.insertedId} successfully created, returning file`])
-
-
 
   return result
 }
