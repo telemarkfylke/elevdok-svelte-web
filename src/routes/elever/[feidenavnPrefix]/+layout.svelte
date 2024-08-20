@@ -24,7 +24,8 @@
       <div class="classes">
         {#each student.skoler as school}
           {#each school.klasser as group}
-            <a href="/klasser/{group.systemId}">{school.kortkortnavn}:{group.navn}</a>
+            <div>{school.kortkortnavn}:{group.navn}</div>
+            <!--<a href="/klasser/{group.systemId}">{school.kortkortnavn}:{group.navn}</a>-->
           {/each}
         {/each}
       </div>
