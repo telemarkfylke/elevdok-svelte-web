@@ -9,7 +9,7 @@
 <h2>Hei, {data.user.name}</h2>
 <h3>Om ElevDok</h3>
 <p>Her kan du se dokumenter som er arkivert i elevens elevmappe i Public 360 (fylkeskommunens sak/arkiv-system)</p>
-<p>Vi jobber med å få på plass dokumenter fra VTFK-arkivet i tillegg, dette kommer fortløpende.</p>
+<p>Vi jobber med å få på plass dokumenter fra VTFK-arkivet i tillegg.</p>
 <h3>Hvem har tilgang på hva?</h3>
 {#if data.systemInfo.FAGLARER_ACCESS_ENABLED}
 	<p>Både kontaktlærere og faglærere har tilgang til å se elevers arkivdokumenter, og til å åpne filene i arkivdokumentet.</p>
