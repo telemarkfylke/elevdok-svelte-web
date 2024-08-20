@@ -145,6 +145,13 @@ export const getUserData = async (user, maskSsn = true) => {
         }
       }
     }
+    // Filtrer vekk elever uten feidenavn - fåkke brukt de (enda hvertfall)
+    const studentsWithoutFeidenavn = students.filter(stud => !stud.feidenavn)
+    if (studentsWithoutFeidenavn.length > 0) {
+      logger('warn', [loggerPrefix, `Fount ${studentsWithoutFeidenavn.length} students without feidenavn, filtering them away... Elevnummers: ${studentsWithoutFeidenavn.map(stud => stud.elevnummer).join(', ')}`])
+      students = students.filter(stud => stud.feidenavn)
+    }
+
     // Fjern kontaktlærer-property rett på eleven, og sleng på kort-feidenavn på alle elever, sleng på IOP-access rett på skole-info om det IOP er skrudd på i ENV
     students = students.map(stud => {
       if (maskSsn) stud.fodselsnummer = `${stud.fodselsnummer.substring(0, 6)}*****`
