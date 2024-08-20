@@ -134,7 +134,7 @@
     </div>
 
     <!-- WARNINGS -->
-    {#if Array.isArray(data.invalidUndervisningsforhold) && data.invalidUndervisningsforhold.length > 0 && showUndervisningsgruppeWarning}
+    {#if Array.isArray(data.invalidUndervisningsforhold) && data.invalidUndervisningsforhold.length > 0 && Array.isArray(data.students) && data.students.length === 0 && showUndervisningsgruppeWarning}
       <div class="warning-box">
         <div style="display:flex;justify-content:space-between;">
           <h4>Advarsel</h4>
@@ -147,7 +147,7 @@
             • SystemId: <strong>{invalid.systemId}</strong> - knyttet til stilling: <strong>{invalid.beskrivelse}</strong>
             <br />
           {/each}
-          Ta kontakt med Visma InSchool-ansvarlig dersom dette må rettes opp i.
+          Har du spørsmål til dette? Ta kontakt med din nærmeste leder.
         </div>
       </div>
     {/if}
