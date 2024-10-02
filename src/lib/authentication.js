@@ -1,11 +1,38 @@
 import { env } from '$env/dynamic/private'
 import { error } from '@sveltejs/kit'
 import { logger } from '@vtfk/logger'
-import { getActiveRole, getAdminImpersonation } from './api'
+import { getActiveRole } from './minelev-api/roles'
+import { getAdminImpersonation } from './minelev-api/admin-impersonation'
+
+/**
+ * @typedef Role
+ * @property {string} value
+ * @property {string} roleName
+ */
+
+/**
+ * @typedef Impersonation
+ * @property {string} target
+ * @property {"larer" | "leder"} type
+ */
+
+/**
+ * @typedef User
+ * @property {string} principalName upn
+ * @property {string} principalId objectId
+ * @property {string} audience guid for the app
+ * @property {string} name displayName
+ * @property {string} activeRole activeRole value
+ * @property {Role[]} roles list of available roles
+ * @property {boolean} hasAdminRole if user has admin role
+ * @property {Impersonation} [impersonating] is adminuser impersonating another user
+ *
+*/
 
 /**
  *
  * @param {Headers} headers
+ * @returns {User} current user
  */
 export const getAuthenticatedUser = async (headers) => {
   if (env.MOCK_AUTH === 'true' && env.NODE_ENV !== 'production') {
@@ -17,6 +44,10 @@ export const getAuthenticatedUser = async (headers) => {
     const mockClaims = {
       auth_typ: 'aad',
       claims: [
+        {
+          typ: 'aud',
+          val: 'guid-guid'
+        },
         {
           typ: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',
           val: `demo.spokelse@${env.FEIDENAVN_SUFFIX}`
@@ -60,7 +91,7 @@ export const getAuthenticatedUser = async (headers) => {
     headers.set('x-ms-client-principal', mockClaimsBase64)
   }
 
-  // Get MS Auth headers
+  // Get MS Auth headers (https://learn.microsoft.com/en-us/azure/app-service/configure-authentication-user-identities)
   const principalName = headers.get('x-ms-client-principal-name')
   const principalId = headers.get('x-ms-client-principal-id')
   const encodedClaims = headers.get('x-ms-client-principal')
@@ -74,6 +105,7 @@ export const getAuthenticatedUser = async (headers) => {
   if (!decodedClaims) throw error(500, 'Det e itj no token her')
   const roles = decodedClaims.claims.filter(claim => claim.typ === 'roles').map(claim => claim.val)
   const name = decodedClaims.claims.find(claim => claim.typ === 'name').val
+  const audience = decodedClaims.claims.find(claim => claim.typ === 'aud').val
 
   let activeRole = ''
   if (roles.length === 0) throw new Error('DU HAKKE TILGANG PÅ NOE DU!')
@@ -82,7 +114,11 @@ export const getAuthenticatedUser = async (headers) => {
     logger('info', ['User has more than one role, checking for active role'])
     const activeDbRole = await getActiveRole(principalId)
     if (!activeDbRole) {
-      activeRole = roles[0]
+      if (roles.includes(env.LEDER_ROLE)) {
+        activeRole = env.LEDER_ROLE // Default to leder if user have several, and none selected in db
+      } else {
+        activeRole = roles[0] // Else just set first role as active
+      }
     } else {
       logger('info', [`User ${principalName} has active db role: ${activeDbRole}`, 'Verifying and setting active'])
       if (!roles.includes(activeDbRole)) {
@@ -126,6 +162,7 @@ export const getAuthenticatedUser = async (headers) => {
     principalName,
     principalId,
     name,
+    audience,
     activeRole,
     roles: repackedRoles,
     hasAdminRole,
