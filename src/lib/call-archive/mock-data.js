@@ -1,7 +1,6 @@
-import { repackP360Document } from "./azf-archive"
+import { repackP360Document } from './azf-archive'
 
 const randomOfficialTitles = ['Kompetansebevis', 'Vitnemål', 'Lærekontrakt', 'IOP', 'Dokumentasjon på bestått fagprøve']
-const randomNames = ['Elev Elevesen', 'Gunnar Greve', 'Max Mekker']
 const categories = [
   {
     Recno: 60005,
@@ -20,7 +19,7 @@ const categories = [
   }
 ]
 const statusCodes = ['J', 'F', 'E', 'A']
-const caseStatuses = ['Under behandling', 'Avsluttet'] // reminder
+// const caseStatuses = ['Under behandling', 'Avsluttet'] // reminder
 const documentArchives = ['Elevdokument', 'Sensitivt elevdokument']
 const fileFormats = ['PDF', 'pdf', 'xlsx', 'DOCX']
 

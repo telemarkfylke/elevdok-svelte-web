@@ -20,11 +20,11 @@ export async function load ({ request }) {
 
     const userData = await getUserData(user)
     const systemInfo = getSystemInfo()
-    
+
     return {
       systemInfo,
       user,
-      ...userData,
+      ...userData
     }
   } catch (err) {
     logger('error', ['Could not get data...', err.response?.data || err.stack || err.toString()])

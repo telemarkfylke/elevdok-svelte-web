@@ -1,7 +1,7 @@
 // ONLY SERVER SIDE
 
-import { env } from "$env/dynamic/private"
-import { logger } from "@vtfk/logger"
+import { env } from '$env/dynamic/private'
+import { logger } from '@vtfk/logger'
 
 export const hasFileAccessForStudent = (teacherStudent, loggerPrefix) => {
   // Husk leder rollen også...

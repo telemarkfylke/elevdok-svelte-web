@@ -1,13 +1,10 @@
 import { fintTeacher } from './fintfolk-api/teacher'
-import { fintStudent } from './fintfolk-api/student'
 import { closeMongoClient, getMongoClient } from './mongo-client'
 import { env } from '$env/dynamic/private'
 import { ObjectId } from 'mongodb'
 import { getMockDb } from './mock-db'
 import { logger } from '@vtfk/logger'
 import { getInternalCache } from './internal-cache'
-import axios from 'axios'
-import { encryptContent } from '@vtfk/encryption'
 import { getAzfArchiveDocuments, getAzfArchiveFile } from './call-archive/azf-archive'
 import { getMockDocuments, mockFile } from './call-archive/mock-data'
 import { hasFileAccessForStudent } from './permissions'
@@ -47,7 +44,7 @@ const repackMiniSchool = (school, kontaktlarer) => {
 
 const getIOPSchools = (teacherStudent) => {
   const IOPCourseIds = ['IOP1000', 'IOP2000', 'IOP3000', 'IOP4000', 'IOP5000']
-  if (!teacherStudent) throw error('Missing required parameter "teacherStudent"')
+  if (!teacherStudent) throw new Error('Missing required parameter "teacherStudent"')
   if (!Array.isArray(teacherStudent.skoler)) throw new Error('Missing "skoler" array from teacherStudent')
   if (!teacherStudent.skoler.every(school => Array.isArray(school.klasser) && school.klasser.every(group => Array.isArray(group.fag)))) throw new Error('Either missing "klasser" array from skole, or missing "fag" array from klasse')
   // Getting IOPSchools in case of future requirement where teachers can only see documents for specific schools
@@ -229,7 +226,7 @@ export const getStudentDocuments = async (user, studentFeidenavn) => {
     // XFYLKE (mainArchive)
     try {
       logger('info', [loggerPrefix, 'Fetching student documents from main archive'])
-      const { documents, errors} = await getAzfArchiveDocuments(teacherStudent.fodselsnummer, studentFeidenavn, loggerPrefix)
+      const { documents, errors } = await getAzfArchiveDocuments(teacherStudent.fodselsnummer, studentFeidenavn, loggerPrefix)
       logger('info', [loggerPrefix, `Got ${documents.length} student documents from main archive`])
       result.documents.push(...documents)
       result.errors.push(...errors)
@@ -263,7 +260,7 @@ export const getStudentDocuments = async (user, studentFeidenavn) => {
     user,
     teacherStudent,
     accessType: type,
-    action: `Åpnet oversikten over elevens dokumenter`
+    action: 'Åpnet oversikten over elevens dokumenter'
   }
   const logEntryId = await createUserLogEntry(logData, loggerPrefix)
   logger('info', [loggerPrefix, `LogEntry with id ${logEntryId.insertedId} successfully created, returning file`])
@@ -315,7 +312,7 @@ export const getFile = async (user, studentFeidenavn, sourceId, fileId) => {
 
   if (!access) {
     logger('warn', [loggerPrefix, 'Teacher does NOT have access to files for student'])
-    throw error(401, 'Du har ikke tilgang på å se dette dokumentet')
+    throw new Error('Du har ikke tilgang på å se dette dokumentet')
   } else {
     logger('info', [loggerPrefix, `Validated access to files for student - accessType: ${type}`])
   }
@@ -346,7 +343,7 @@ export const getFile = async (user, studentFeidenavn, sourceId, fileId) => {
   } else if (env.VTFK_ARCHIVE_ENABLED === 'true' && sourceId === 'vtfk') {
     // implement
   }
-  logger('info', [loggerPrefix, `Got base64file - creating logEntry`])
+  logger('info', [loggerPrefix, 'Got base64file - creating logEntry'])
   const logData = {
     user,
     teacherStudent,
@@ -360,7 +357,7 @@ export const getFile = async (user, studentFeidenavn, sourceId, fileId) => {
   }
   const logEntryId = await createUserLogEntry(logData, loggerPrefix)
   logger('info', [loggerPrefix, `LogEntry with id ${logEntryId.insertedId} successfully created, returning file`])
-  
+
   return result.base64
 }
 
@@ -401,7 +398,7 @@ export const setActiveRole = async (user, requestedRole) => {
   try {
     const mongoClient = await getMongoClient()
     const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(env.MONGODB_USER_SETTINGS_COLLECTION)
-    const setUserSetting = await collection.findOneAndUpdate({ principalId: user.principalId }, { $set: { principalId: user.principalId, principalName: user.principalName, activeRole: requestedRole, changedTimestamp: new Date().toISOString() } }, { upsert: true })
+    await collection.findOneAndUpdate({ principalId: user.principalId }, { $set: { principalId: user.principalId, principalName: user.principalName, activeRole: requestedRole, changedTimestamp: new Date().toISOString() } }, { upsert: true })
     logger('info', [`${user.principalName} succesfully changed role to ${requestedRole} in db`])
   } catch (error) {
     if (error.toString().startsWith('MongoTopologyClosedError')) {
@@ -493,7 +490,7 @@ const createUserLogEntry = async (logData, loggerPrefix) => {
     file: file || null
   }
   if (env.MOCK_API === 'true') {
-    logger('info', [loggerPrefix, `MOCK_API is true, adding logEntry to mockDb`])
+    logger('info', [loggerPrefix, 'MOCK_API is true, adding logEntry to mockDb'])
     const mockDb = getMockDb()
     logEntry.type = 'logElement'
     const randomId = new ObjectId().toString()
@@ -502,7 +499,7 @@ const createUserLogEntry = async (logData, loggerPrefix) => {
     logger('info', [loggerPrefix, `MOCK_API is true, document successfully added to mockDb with id: ${randomId}`])
     return { insertedId: randomId }
   }
-  logger('info', [loggerPrefix, `Inserting logEntry in db`])
+  logger('info', [loggerPrefix, 'Inserting logEntry in db'])
   try {
     const mongoClient = await getMongoClient()
     const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)

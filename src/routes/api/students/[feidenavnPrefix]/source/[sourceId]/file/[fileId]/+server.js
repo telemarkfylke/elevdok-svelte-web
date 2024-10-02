@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private'
-import { getStudent, getFile } from '$lib/api'
+import { getFile } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
 import { json } from '@sveltejs/kit'
 
