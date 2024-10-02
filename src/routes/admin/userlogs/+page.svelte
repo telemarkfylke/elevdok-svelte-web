@@ -17,7 +17,6 @@
   const getLogElements = async () => {
     errorMessage = ''
     loading = true
-    console.log(searchValue)
     try {
       const { data } = await axios.get(`/api/admin/logentries${searchValue ? '?search='+searchValue : ''}`)
       logElements = data

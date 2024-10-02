@@ -1,9 +1,10 @@
 import { env } from '$env/dynamic/private'
-import { getUserData } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
+import { getUserData } from '$lib/elevdok-api/get-user-data'
 import { getSystemInfo } from '$lib/system-info'
 import { error } from '@sveltejs/kit'
 import { logger } from '@vtfk/logger'
+
 
 /** @type {import('./$types').LayoutServerLoad} */
 export async function load ({ request }) {

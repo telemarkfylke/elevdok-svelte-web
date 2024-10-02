@@ -1,8 +1,8 @@
 import { env } from '$env/dynamic/private'
 import { error } from '@sveltejs/kit'
 import { logger } from '@vtfk/logger'
-import { getActiveRole } from './minelev-api/roles'
-import { getAdminImpersonation } from './minelev-api/admin-impersonation'
+import { getActiveRole } from './elevdok-api/roles'
+import { getAdminImpersonation } from './elevdok-api/admin-impersonation'
 
 /**
  * @typedef Role

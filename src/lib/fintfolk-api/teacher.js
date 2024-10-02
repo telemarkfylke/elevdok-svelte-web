@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { getMsalToken } from '$lib/msal-token'
-import { sleep } from '$lib/api'
 import axios from 'axios'
+import { sleep } from '$lib/helpers/sleep'
 
 const mockTeacher = {
   feidenavn: `larer.laresen@${env.FEIDENAVN_SUFFIX}`,

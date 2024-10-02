@@ -1,5 +1,5 @@
-import { deleteAdminImpersonation } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
+import { deleteAdminImpersonation } from '$lib/elevdok-api/admin-impersonation'
 import { json } from '@sveltejs/kit'
 
 export const DELETE = async ({ params, request, url }) => {

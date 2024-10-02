@@ -1,12 +1,6 @@
-import { fintTeacher } from './fintfolk-api/teacher'
 import { env } from '$env/dynamic/private'
+import { fintTeacher } from '$lib/fintfolk-api/teacher'
 import { logger } from '@vtfk/logger'
-
-export const sleep = (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
 
 const allowedUndervisningsforholdDescription = ['Adjunkt', 'Adjunkt m/till utd', 'Adjunkt 1', 'Lærer', 'Lærer-', 'Lektor', 'Lektor m/till utd', 'Lektor 1']
 
@@ -24,17 +18,38 @@ export const getCurrentSchoolYear = (delimiter = '/') => {
   return getSchoolYearFromDate(new Date(), delimiter)
 }
 
-const repackMiniSchool = (school, kontaktlarer) => {
+/**
+ * @typedef MiniSchool
+ * @property {string} kortkortnavn shortName without UT- or OPT-
+ * @property {string} skolenummer
+ * @property {string} kortnavn
+ * @property {string} navn
+ * @property {true} kontaktlarer is current user contactTeacher for student at this school
+ *
+ */
+
+/**
+ *
+ * @param {Object} school
+ * @param {boolean} kontaktlarer
+ * @returns {MiniSchool} repackedSchool
+ */
+export const repackMiniSchool = (school, kontaktlarer) => {
   const kortkortnavn = school.kortnavn.indexOf('-') ? school.kortnavn.substring(school.kortnavn.indexOf('-') + 1) : school.kortnavn
   return {
     kortkortnavn,
     skolenummer: school.skolenummer,
     kortnavn: school.kortnavn,
     navn: school.navn,
-    kontaktlarer
+    kontaktlarer: kontaktlarer || false
   }
 }
 
+/**
+ * 
+ * @param {TeacherStudent} teacherStudent 
+ * @returns {MiniSchool[]} IOPSchools
+ */
 const getIOPSchools = (teacherStudent) => {
   const IOPCourseIds = ['IOP1000', 'IOP2000', 'IOP3000', 'IOP4000', 'IOP5000']
   if (!teacherStudent) throw new Error('Missing required parameter "teacherStudent"')
@@ -46,14 +61,97 @@ const getIOPSchools = (teacherStudent) => {
 }
 
 /**
+ * @typedef Fag
+ * @property {string} systemId
+ * @property {string} navn
+ * @property {string[]} grepreferanse
+ * 
+ */
+
+/** 
+ * @typedef ElevKlasse
+ * @property {string} navn
+ * @property {string} navn
+ * @property {"basisgruppe" | "undervisningsgruppe"} type
+ * @property {Fag[]} fag
+ * 
+ */
+
+/** 
+ * @typedef ElevSkoleProps
+ * @property {ElevKlasse[]} klasser
+ * @property {boolean} iop om brukeren har tilgang via iop-klasse
+ * 
+ */
+
+/** 
+ * @typedef {MiniSchool & ElevSkoleProps} ElevSkole
+ */
+
+/**
+ * @typedef TeacherStudent
+ * @property {string} navn
+ * @property {string} fornavn
+ * @property {string} etternavn
+ * @property {string} feidenavn
+ * @property {string} elevnummer
+ * @property {string} fodselsnummer
+ * @property {ElevSkole[]} skoler
+ * @property {string} feidenavnPrefix feidenavn without "@fylke.no"
  *
- * @param {Object} user
+ */
+
+/**
+ * @typedef PersonData
+ * @property {string} upn
+ * @property {string} feidenavn
+ * @property {string} ansattnummer
+ * @property {string} name
+ * @property {string} firstName
+ * @property {string} lastName
+ *
+ */
+
+/**
+ * @typedef LarerKlasse
+ * @property {string} navn
+ * @property {string} type
+ * @property {string} systemId
+ * @property {string[]} fag
+ * @property {string} skole school full name
+ *
+ */
+
+/**
+ * @typedef InvalidUndervisningsforhold
+ * @property {string} beskrivelse
+ * @property {string} systemId
+ *
+ */
+
+/**
+ * @typedef UserData
+ * @property {import('$lib/system-info').SystemInfo} systemInfo
+ * @property {PersonData} personData
+ * @property {TeacherStudent[]} students
+ * @property {LarerKlasse[]} classes
+ * @property {InvalidUndervisningsforhold[]} invalidUndervisningsforhold
+ *
+ */
+
+
+/**
+ *
+ * @param {import('$lib/authentication').User} user
+ * @param {boolean} maskSsn defaults to true
+ * @returns {UserData} users data
+ * 
  */
 export const getUserData = async (user, maskSsn = true) => {
   let loggerPrefix = `getUserData - user: ${user.principalName}`
   logger('info', [loggerPrefix, 'New request'])
   const userData = {
-    userData: null,
+    personData: null,
     invalidUndervisningsforhold: [],
     students: [],
     classes: []
@@ -63,11 +161,13 @@ export const getUserData = async (user, maskSsn = true) => {
   if (user.activeRole === env.DEFAULT_ROLE || (user.hasAdminRole && user.impersonating?.type === 'larer')) {
     loggerPrefix += ' - role: Teacher'
     logger('info', [loggerPrefix, 'Fetching teacher data from FINT'])
+    if (user.impersonating?.type === 'larer') loggerPrefix += ` - impersonating: ${user.impersonating.target}`
     const teacherUpn = user.hasAdminRole && user.impersonating?.type === 'larer' ? user.impersonating.target : user.principalName
+    logger('info', [loggerPrefix, 'Fetching teacher data from FINT with teacher id', teacherUpn])
     const teacher = await fintTeacher(teacherUpn)
     if (!teacher) return userData
 
-    userData.userData = {
+    userData.personData = {
       upn: teacher.upn,
       feidenavn: teacher.feidenavn,
       ansattnummer: teacher.ansattnummer,
@@ -142,7 +242,7 @@ export const getUserData = async (user, maskSsn = true) => {
       students = students.filter(stud => stud.feidenavn)
     }
 
-    // Fjern kontaktlærer-property rett på eleven, og sleng på kort-feidenavn på alle elever, sleng på IOP-access rett på skole-info om det IOP er skrudd på i ENV
+    // Fjern kontaktlærer-property rett på eleven (den ligger på skoler i stedet), og sleng på kort-feidenavn på alle elever, sleng på IOP-access rett på skole-info om det IOP er skrudd på i ENV
     students = students.map(stud => {
       if (maskSsn) stud.fodselsnummer = `${stud.fodselsnummer.substring(0, 6)}*****`
       delete stud.kontaktlarer
@@ -168,8 +268,15 @@ export const getUserData = async (user, maskSsn = true) => {
   }
 
   // TODO - finn ut av leder rådgiver
-  if (user.activeRole === env.LEDER_ROLE) {
-    console.log('En leder rådgiver aiaiai')
+  // If leder / rådgiver or administrator impersonating teacher
+  if (user.activeRole === env.LEDER_ROLE || (user.hasAdminRole && user.impersonating?.type === 'leder')) {
+    loggerPrefix += ' - role: Leder'
+    if (user.impersonating?.type === 'leder') loggerPrefix += ` - impersonating: ${user.impersonating.target}`
+    logger('info', [loggerPrefix, 'Checking school access'])
+
+    // TODO resten her
+    // Kanskje hente skoletilganger basert på gruppor i stedet.... Da trenger man bare legge til et sted, tror det er bedre etter at jeg nå har prøvd den andre driten. Implementere det i Minelev også da. hvis det fungerer greit.
+
   }
 
   return userData

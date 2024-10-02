@@ -1,5 +1,5 @@
-import { setActiveRole } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
+import { setActiveRole } from '$lib/elevdok-api/roles'
 import { json } from '@sveltejs/kit'
 
 export const POST = async ({ params, request, url }) => {
