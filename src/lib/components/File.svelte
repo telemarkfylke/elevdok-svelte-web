@@ -26,7 +26,6 @@
       displayFile = true
     } catch (error) {
       fileLoading = false
-      console.log(error)
       errorMessage = `Det oppstod en feil ved henting av fil: ${error}`
     }
   }

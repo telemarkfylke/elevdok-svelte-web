@@ -118,7 +118,7 @@
               <button type="submit" class="blank userMenuOption inward-focus-within">Bytt til rolle: {availableRole.roleName}</button>
             </form>
           {/each}
-          <button class="blank userMenuOption inward-focus-within" on:click={() => goto('/.auth/logout')}>Logg ut</button> <!--TODO legg inn logg ut funksjonalitet-->
+          <button class="blank userMenuOption inward-focus-within" on:click={() => goto('/.auth/logout')}>Logg ut</button>
         </div>
       </div>
     </div>
