@@ -26,6 +26,7 @@
     "@vtfk/logger": "^6.1.0",
     "axios": "^1.7.2",
     "mongodb": "^6.8.0",
-    "node-cache": "^5.1.2"
+    "node-cache": "^5.1.2",
+    "vtfk-schools-info": "^3.4.2"
   }
 }
