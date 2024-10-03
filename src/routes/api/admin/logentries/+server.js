@@ -1,5 +1,5 @@
-import { getUserLogs } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
+import { getUserLogs } from '$lib/elevdok-api/user-logs'
 import { json } from '@sveltejs/kit'
 
 export const GET = async ({ params, request, url }) => {

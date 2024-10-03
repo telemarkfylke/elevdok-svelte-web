@@ -94,6 +94,18 @@
       </a>
     {/each}
   </div>
+  <!-- MOBILE MENU -->
+  <div class="menubarMobile">
+    {#each sideMenuItems as menuItem}
+      <a href={menuItem.href} class="menuLinkMobile inward-focus-within">
+        <div class="menuItemMobile{isActiveRoute(menuItem.href, $page.url.pathname) ? ' active' : ''}">
+          <span class="material-symbols-outlined">{menuItem.icon}</span>
+          <div>{menuItem.title}</div>
+        </div>
+      </a>
+    {/each}
+  </div>
+  <!-- END MOBILE MENU -->
   <div class="pageContent">
     <div class="topbar">
       <div>
@@ -118,7 +130,7 @@
               <button type="submit" class="blank userMenuOption inward-focus-within">Bytt til rolle: {availableRole.roleName}</button>
             </form>
           {/each}
-          <button class="blank userMenuOption inward-focus-within" on:click={() => goto('/.auth/logout')}>Logg ut</button> <!--TODO legg inn logg ut funksjonalitet-->
+          <button class="blank userMenuOption inward-focus-within" on:click={() => goto('/.auth/logout')}>Logg ut</button>
         </div>
       </div>
     </div>
@@ -214,11 +226,15 @@
       display: none;
     }
   }
-  */ 
+  */
+  
+  .menubarMobile {
+    display: none;
+  }
   .logoDarkmode {
     display: none;
   }
-  .menuLink, .logoLink {
+  .menuLink, .logoLink, .menuLinkMobile {
     /*border-bottom: 1px solid var(--primary-color);*/
     text-decoration: none;
     color: var(--font-color);
@@ -234,11 +250,11 @@
   .menuItem span {
     font-size: 1.5rem;
   }
-  .menuItem.active {
+  .menuItem.active, .menuItemMobile.active {
     font-weight: bold;
     background-color: var(--secondary-color-30);
   }
-  .menuItem:hover {
+  .menuItem:hover, .menuItemMobile:hover {
     background-color: var(--secondary-color-10);
   }
   .pageContent {
@@ -317,5 +333,47 @@
   }
   .hidden {
     display: none;
+  }
+  /* Smaller devices */
+  @media only screen and (max-width: 768px) {
+    .fakesidebartotakeupspace, .sidebar {
+      display: none;
+    }
+    .menubarMobile {
+      z-index: 100;
+      position: fixed;
+      bottom: 0rem;
+      align-items: center;
+      justify-content: space-between;
+      display: flex;
+      width: 100vw;
+      background-color: var(--secondary-color-20);
+      overflow: scroll;
+    }
+    .menuLinkMobile {
+      flex-grow: 1;
+    }
+    .menuItemMobile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 1rem;
+      cursor: pointer;
+    }
+    .menuItem span {
+      font-size: 1.5rem;
+    }
+    .topbar {
+      padding: 0rem 1rem;
+    }
+    .contentContainer {
+      padding: 1rem 1rem 5rem 1rem;
+    }
+    .pathtracker {
+      padding: 0.4rem 1rem;
+    }
+    .userContainer .displayName {
+      display: none;
+    }
   }
 </style>

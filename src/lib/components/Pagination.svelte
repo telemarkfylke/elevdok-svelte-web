@@ -32,33 +32,33 @@
 </script>
 
 <div class="pageRow">
-  <div>Side {currentPage+1} av {numberOfPages}</div>
-    <div class="pageNumbers">
-      {#if currentPage === 0}
-        <button disabled title="forrige side" class="link pageArrow"><span class="material-symbols-outlined">chevron_left</span></button>
-      {:else}
-          <button title="forrige side" class="link pageArrow" on:click={previousPage}><span class="material-symbols-outlined">chevron_left</span></button>
-      {/if}
-      {#each getPaginationArray(currentPage, numberOfPages) as pageNumber}
-        {#if pageNumber === '...'}
-            <button disabled class="link currentPage">{pageNumber}</button>
-        {:else if currentPage === pageNumber}
-            <button disabled class="link currentPage">{pageNumber+1}</button>
-        {:else}
-            <button class="link{currentPage === pageNumber ? ' currentPage' : ''}" on:click={() => {gotoPage(pageNumber)}}>{pageNumber+1}</button> <!--må muligens sende inn funksjon her og-->
-        {/if}
-      {/each}
-      {#if currentPage === numberOfPages-1}
-        <button disabled title="neste side" class="link pageArrow"><span class="material-symbols-outlined">chevron_right</span></button>
-      {:else}
-        <button title="neste side" class="link pageArrow" on:click={nextPage}><span class="material-symbols-outlined">chevron_right</span></button>
-      {/if}
-    </div>
-    {#if currentPage === numberOfPages-1} <!--last page-->
-      <div class="countInfo">Viser {elementsPerPage > numberOfElements ? numberOfElements : `${(elementsPerPage * currentPage) + 1}-${numberOfElements}`} av {numberOfElements} {elementName}</div>
+  <div class="pageInfo">Side {currentPage+1} av {numberOfPages}</div>
+  <div class="pageNumbers">
+    {#if currentPage === 0}
+      <button disabled title="forrige side" class="link pageArrow"><span class="material-symbols-outlined">chevron_left</span></button>
     {:else}
-      <div class="countInfo">Viser {elementsPerPage > numberOfElements ? numberOfElements : `${(elementsPerPage * currentPage) + 1}-${elementsPerPage * (currentPage + 1)}` } av {numberOfElements} {elementName}</div>
+        <button title="forrige side" class="link pageArrow" on:click={previousPage}><span class="material-symbols-outlined">chevron_left</span></button>
     {/if}
+    {#each getPaginationArray(currentPage, numberOfPages) as pageNumber}
+      {#if pageNumber === '...'}
+          <button disabled class="link currentPage">{pageNumber}</button>
+      {:else if currentPage === pageNumber}
+          <button disabled class="link currentPage">{pageNumber+1}</button>
+      {:else}
+          <button class="link{currentPage === pageNumber ? ' currentPage' : ''}" on:click={() => {gotoPage(pageNumber)}}>{pageNumber+1}</button> <!--må muligens sende inn funksjon her og-->
+      {/if}
+    {/each}
+    {#if currentPage === numberOfPages-1}
+      <button disabled title="neste side" class="link pageArrow"><span class="material-symbols-outlined">chevron_right</span></button>
+    {:else}
+      <button title="neste side" class="link pageArrow" on:click={nextPage}><span class="material-symbols-outlined">chevron_right</span></button>
+    {/if}
+  </div>
+  {#if currentPage === numberOfPages-1} <!--last page-->
+    <div class="countInfo">Viser {elementsPerPage > numberOfElements ? numberOfElements : `${(elementsPerPage * currentPage) + 1}-${numberOfElements}`} av {numberOfElements} {elementName}</div>
+  {:else}
+    <div class="countInfo">Viser {elementsPerPage > numberOfElements ? numberOfElements : `${(elementsPerPage * currentPage) + 1}-${elementsPerPage * (currentPage + 1)}` } av {numberOfElements} {elementName}</div>
+  {/if}
 </div>
 
 <style>
@@ -78,5 +78,17 @@
 	.pageArrow {
 			text-decoration: none;
 	}
+
+  @media only screen and (max-width: 768px) {
+    .countInfo {
+      display: none;
+    }
+    .pageInfo {
+      display: none;
+    }
+    .pageRow {
+      justify-content: center;
+    }
+  }
 
 </style>

@@ -1,7 +1,6 @@
 import { env } from '$env/dynamic/private'
 import { getMsalToken } from '$lib/msal-token'
 import axios from 'axios'
-import { getMockDocuments } from './mock-data'
 import { logger } from '@vtfk/logger'
 
 export const repackP360Document = (document, feidenavn, source, sourceName) => {
@@ -76,10 +75,9 @@ export const getAzfArchiveDocuments = async (ssn, feidenavn, loggerPrefix) => {
       caseNumbers.push(archiveCase.CaseNumber)
     }
   } catch (error) {
-    logger('info', [loggerPrefix, `Failed when fetching elevmappe`, error.response?.data || error.stack || error.toString()])
+    logger('info', [loggerPrefix, 'Failed when fetching elevmappe', error.response?.data || error.stack || error.toString()])
     result.errors.push(`Feilet ved henting av elevmappe: ${error.toString()}`)
   }
-  const documents = []
   const allowedDocumentStatuses = ['J', 'F', 'E', 'A']
   for (const caseNumber of caseNumbers) {
     try {
@@ -108,9 +106,9 @@ export const getAzfArchiveDocuments = async (ssn, feidenavn, loggerPrefix) => {
 
 export const getAzfArchiveFile = async (fileId, loggerPrefix) => {
   if (!fileId || !loggerPrefix) throw new Error('Missing required parameter "fileId" or "loggerPrefix"')
-  
+
   const accessToken = await getMsalToken({ scope: env.AZF_ARCHIVE_SCOPE })
-  
+
   const filePayload = {
     service: 'FileService',
     method: 'GetFileWithMetadata',
@@ -119,7 +117,7 @@ export const getAzfArchiveFile = async (fileId, loggerPrefix) => {
       IncludeFileData: true
     }
   }
-  const { data } = await axios.post(`${env.AZF_ARCHIVE_URL}/Archive`, filePayload, { headers: { Authorization: `Bearer ${accessToken}`} })
+  const { data } = await axios.post(`${env.AZF_ARCHIVE_URL}/Archive`, filePayload, { headers: { Authorization: `Bearer ${accessToken}` } })
   return {
     base64: data.Base64Data,
     metadata: {

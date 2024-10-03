@@ -1,5 +1,5 @@
-import { env } from "$env/dynamic/private"
-import { version } from "../../package.json"
+import { env } from '$env/dynamic/private'
+import { version } from '../../package.json'
 
 export const getSystemInfo = () => {
   return {

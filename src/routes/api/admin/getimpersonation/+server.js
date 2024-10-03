@@ -1,5 +1,5 @@
-import { getAdminImpersonation } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
+import { getAdminImpersonation } from '$lib/elevdok-api/admin-impersonation'
 import { json } from '@sveltejs/kit'
 
 export const GET = async ({ params, request, url }) => {

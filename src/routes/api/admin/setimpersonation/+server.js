@@ -1,5 +1,5 @@
-import { setAdminImpersonation } from '$lib/api'
 import { getAuthenticatedUser } from '$lib/authentication'
+import { setAdminImpersonation } from '$lib/elevdok-api/admin-impersonation'
 import { json } from '@sveltejs/kit'
 
 export const POST = async ({ params, request, url }) => {
