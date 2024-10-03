@@ -15,3 +15,17 @@ export const getInternalCache = () => {
   }
   return internalCache
 }
+
+/**
+ *
+ * @returns { import('node-cache') }
+ */
+export const resetInternalCache = () => {
+  if (!internalCache) {
+    return true
+  }
+  logger('info', ['internal-cache', 'Resetting internal cache'])
+  internalCache.flushAll()
+  logger('info', ['internal-cache', 'Reset internal cache - done'])
+  return true
+}

@@ -1,6 +1,8 @@
 import { env } from '$env/dynamic/private'
 import { fintTeacher } from '$lib/fintfolk-api/teacher'
+import { fintSchool } from '$lib/fintfolk-api/school'
 import { logger } from '@vtfk/logger'
+import { getLeaderAccess } from './leder-access'
 
 const allowedUndervisningsforholdDescription = ['Adjunkt', 'Adjunkt m/till utd', 'Adjunkt 1', 'Lærer', 'Lærer-', 'Lektor', 'Lektor m/till utd', 'Lektor 1']
 
@@ -46,8 +48,8 @@ export const repackMiniSchool = (school, kontaktlarer) => {
 }
 
 /**
- * 
- * @param {TeacherStudent} teacherStudent 
+ *
+ * @param {TeacherStudent} teacherStudent
  * @returns {MiniSchool[]} IOPSchools
  */
 const getIOPSchools = (teacherStudent) => {
@@ -65,26 +67,26 @@ const getIOPSchools = (teacherStudent) => {
  * @property {string} systemId
  * @property {string} navn
  * @property {string[]} grepreferanse
- * 
+ *
  */
 
-/** 
+/**
  * @typedef ElevKlasse
  * @property {string} navn
  * @property {string} navn
  * @property {"basisgruppe" | "undervisningsgruppe"} type
  * @property {Fag[]} fag
- * 
+ *
  */
 
-/** 
+/**
  * @typedef ElevSkoleProps
  * @property {ElevKlasse[]} klasser
  * @property {boolean} iop om brukeren har tilgang via iop-klasse
- * 
+ *
  */
 
-/** 
+/**
  * @typedef {MiniSchool & ElevSkoleProps} ElevSkole
  */
 
@@ -139,13 +141,12 @@ const getIOPSchools = (teacherStudent) => {
  *
  */
 
-
 /**
  *
  * @param {import('$lib/authentication').User} user
  * @param {boolean} maskSsn defaults to true
  * @returns {UserData} users data
- * 
+ *
  */
 export const getUserData = async (user, maskSsn = true) => {
   let loggerPrefix = `getUserData - user: ${user.principalName}`
@@ -273,10 +274,79 @@ export const getUserData = async (user, maskSsn = true) => {
     loggerPrefix += ' - role: Leder'
     if (user.impersonating?.type === 'leder') loggerPrefix += ` - impersonating: ${user.impersonating.target}`
     logger('info', [loggerPrefix, 'Checking school access'])
+    const leaderId = user.hasAdminRole && user.impersonating?.type === 'leder' ? user.impersonating.target : user.principalId
 
-    // TODO resten her
-    // Kanskje hente skoletilganger basert på gruppor i stedet.... Da trenger man bare legge til et sted, tror det er bedre etter at jeg nå har prøvd den andre driten. Implementere det i Minelev også da. hvis det fungerer greit.
+    logger('info', [loggerPrefix, 'Fetching leader data with leader id', leaderId])
+    // Sjekker først om vi har schoolaccess for brukeren i cachen
+    const leaderAccess = await getLeaderAccess(user)
 
+    let students = []
+    for (const schoolAccess of leaderAccess) {
+      logger('info', [loggerPrefix, `Fetching data for school ${schoolAccess.schoolName} (${schoolAccess.schoolNumber}) from FINT`])
+      const school = await fintSchool(schoolAccess.schoolNumber)
+      if (!school) {
+        logger('warn', [loggerPrefix, `School ${schoolAccess.schoolName} with schoolNumber (${schoolAccess.schoolNumber}) does not exist in FINT, skipping`])
+        continue
+      }
+      logger('info', [loggerPrefix, `Got data for school ${schoolAccess.schoolName} (${schoolAccess.schoolNumber}) from FINT`])
+
+      school.kortnavn = school.organisasjon?.kortnavn || 'SKOLE' // Simple tweak to make sure we have a shortname
+      const miniSchool = repackMiniSchool(school, false)
+
+      // Dytt inn alle elevene på skolen
+      for (const student of school.elever) {
+        const existingStudent = students.find(stud => stud.elevnummer === student.elevnummer)
+        if (existingStudent) {
+          if (!existingStudent.skoler.some(skole => skole.skolenummer === school.skolenummer)) existingStudent.skoler.push({ ...miniSchool, klasser: [] })
+        } else {
+          students.push({ ...student, skoler: [{ ...miniSchool, klasser: [] }] })
+        }
+      }
+      // Dytt inn alle elever fra basisgruppene (og basisgruppene på eleven)
+      for (const basisgruppe of school.basisgrupper.filter(gruppe => gruppe.aktiv)) {
+        // classes.push({ navn: basisgruppe.navn, type: 'basisgruppe', systemId: basisgruppe.systemId, fag: ['Basisgruppe'], skole: miniSchool.navn })
+        for (const elev of basisgruppe.elever) {
+          // Vi bør ha eleven allerede, men sjekker for sikkerhets skyld
+          const existingStudent = students.find(student => student.elevnummer === elev.elevnummer)
+          if (existingStudent) {
+            const existingSchoolOnStudent = existingStudent.skoler.find(school => school.skolenummer === miniSchool.skolenummer)
+            if (!existingSchoolOnStudent) { // Ikke registrert skoletilgangen enda, legger til
+              existingStudent.skoler.push({ ...miniSchool, klasser: [{ navn: basisgruppe.navn, type: 'basisgruppe', systemId: basisgruppe.systemId, fag: [] }] })
+            } else { // Skolen allerede lagt inn, legger inn klassen på skolen (om den ikke er der allerede)
+              if (!existingSchoolOnStudent.klasser.some(group => group.systemId === basisgruppe.systemId)) existingSchoolOnStudent.klasser.push({ navn: basisgruppe.navn, type: 'basisgruppe', systemId: basisgruppe.systemId, fag: [] })
+            }
+            if (existingSchoolOnStudent && !existingSchoolOnStudent.kontaktlarer && elev.kontaktlarer) { // Sjekker om er kontaktlærer på ekisterende skole (som ikke var funnet fra før av, for sikkerhets skyld)
+              existingSchoolOnStudent.kontaktlarer = true
+            }
+          } else { // Ikke lagt inn eleven i students enda
+            students.push({ ...elev, skoler: [{ ...miniSchool, klasser: [{ navn: basisgruppe.navn, type: 'basisgruppe', systemId: basisgruppe.systemId, fag: [] }] }] })
+          }
+        }
+      }
+    }
+    // Filtrer vekk elever uten feidenavn - fåkke brukt de (enda hvertfall)
+    const studentsWithoutFeidenavn = students.filter(stud => !stud.feidenavn)
+    if (studentsWithoutFeidenavn.length > 0) {
+      logger('warn', [loggerPrefix, `Fount ${studentsWithoutFeidenavn.length} students without feidenavn, filtering them away...`])
+      students = students.filter(stud => stud.feidenavn)
+    }
+
+    // Fjern kontaktlærer-property rett på eleven (den ligger på skoler i stedet), og sleng på kort-feidenavn på alle elever, sleng på IOP-access rett på skole-info om det IOP er skrudd på i ENV
+    students = students.map(stud => {
+      if (maskSsn) stud.fodselsnummer = `${stud.fodselsnummer.substring(0, 6)}*****`
+      delete stud.kontaktlarer
+
+      return {
+        ...stud,
+        feidenavnPrefix: stud.feidenavn.substring(0, stud.feidenavn.indexOf('@'))
+      }
+    })
+    // Sorter elevene alfabetisk
+    students.sort((a, b) => (a.navn > b.navn) ? 1 : (b.navn > a.navn) ? -1 : 0)
+
+    userData.students = students
+
+    return userData
   }
 
   return userData

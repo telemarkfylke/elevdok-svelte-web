@@ -3,8 +3,19 @@
 import { env } from '$env/dynamic/private'
 import { logger } from '@vtfk/logger'
 
-export const hasFileAccessForStudent = (teacherStudent, loggerPrefix) => {
-  // Husk leder rollen også...
+/**
+ *
+ * @param {import('./authentication').User} user
+ * @param {import('./elevdok-api/get-user-data').TeacherStudent} teacherStudent
+ * @param {string} loggerPrefix
+ * @returns {Object}
+ */
+export const hasFileAccessForStudent = (user, teacherStudent, loggerPrefix) => {
+  logger('info', [loggerPrefix, 'Checking if user has leader access'])
+  if (user.activeRole === env.LEDER_ROLE || (user.hasAdminRole && user.impersonating && user.impersonating?.type === 'leder')) {
+    logger('info', [loggerPrefix, 'User has leader access'])
+    return { access: true, type: 'leader' }
+  }
   logger('info', [loggerPrefix, 'Checking if teacher has contactTeacher access'])
   if (teacherStudent.skoler.some(school => school.kontaktlarer)) {
     logger('info', [loggerPrefix, 'Teacher has contactTeacher access'])

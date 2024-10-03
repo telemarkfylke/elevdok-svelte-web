@@ -1,12 +1,12 @@
-import { env } from "$env/dynamic/private"
-import { getMockDb } from "$lib/mock-db"
-import { closeMongoClient, getMongoClient } from "$lib/mongo-client"
-import { logger } from "@vtfk/logger"
+import { env } from '$env/dynamic/private'
+import { getMockDb } from '$lib/mock-db'
+import { closeMongoClient, getMongoClient } from '$lib/mongo-client'
+import { logger } from '@vtfk/logger'
 
 /**
- * 
- * @param {string} principalId 
- * @returns 
+ *
+ * @param {string} principalId
+ * @returns
  */
 export const getActiveRole = async (principalId) => {
   if (env.MOCK_API === 'true') {
@@ -30,10 +30,10 @@ export const getActiveRole = async (principalId) => {
 }
 
 /**
- * 
- * @param {import("$lib/authentication").User} user 
- * @param {string} requestedRole 
- * @returns 
+ *
+ * @param {import("$lib/authentication").User} user
+ * @param {string} requestedRole
+ * @returns
  */
 export const setActiveRole = async (user, requestedRole) => {
   logger('info', [`${user.principalName} requested role change to role: ${requestedRole}`])

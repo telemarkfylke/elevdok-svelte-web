@@ -1,17 +1,17 @@
-import { logger } from "@vtfk/logger"
-import { getUserData } from "./get-user-data"
-import { hasFileAccessForStudent } from "$lib/permissions"
-import { getAzfArchiveFile } from "$lib/call-archive/azf-archive"
-import { mockFile } from "$lib/call-archive/mock-data"
-import { createUserLogEntry } from "./user-logs"
-import { env } from "$env/dynamic/private"
+import { logger } from '@vtfk/logger'
+import { getUserData } from './get-user-data'
+import { hasFileAccessForStudent } from '$lib/permissions'
+import { getAzfArchiveFile } from '$lib/call-archive/azf-archive'
+import { mockFile } from '$lib/call-archive/mock-data'
+import { createUserLogEntry } from './user-logs'
+import { env } from '$env/dynamic/private'
 
 /**
- * 
- * @param {import("$lib/authentication").User} user 
- * @param {string} studentFeidenavn 
- * @param {string} sourceId 
- * @param {string} fileId 
+ *
+ * @param {import("$lib/authentication").User} user
+ * @param {string} studentFeidenavn
+ * @param {string} sourceId
+ * @param {string} fileId
  * @returns {string} file as base64
  */
 export const getFile = async (user, studentFeidenavn, sourceId, fileId) => {
@@ -54,7 +54,7 @@ export const getFile = async (user, studentFeidenavn, sourceId, fileId) => {
 
   // Sjekk også at bruker har tilgang til å faktisk åpne filen!! Basert på ENV-variabler
   logger('info', [loggerPrefix, 'Validating access to files for student'])
-  const { access, type } = hasFileAccessForStudent(teacherStudent, loggerPrefix)
+  const { access, type } = hasFileAccessForStudent(user, teacherStudent, loggerPrefix)
 
   if (!access) {
     logger('warn', [loggerPrefix, 'Teacher does NOT have access to files for student'])

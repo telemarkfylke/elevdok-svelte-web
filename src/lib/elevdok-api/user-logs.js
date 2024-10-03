@@ -1,9 +1,9 @@
-import { env } from "$env/dynamic/private"
-import { getMockDb } from "$lib/mock-db"
-import { closeMongoClient, getMongoClient } from "$lib/mongo-client"
-import { logger } from "@vtfk/logger"
-import { ObjectId } from "mongodb"
-import { getCurrentSchoolYear } from "./get-user-data"
+import { env } from '$env/dynamic/private'
+import { getMockDb } from '$lib/mock-db'
+import { closeMongoClient, getMongoClient } from '$lib/mongo-client'
+import { logger } from '@vtfk/logger'
+import { ObjectId } from 'mongodb'
+import { getCurrentSchoolYear } from './get-user-data'
 
 export const createUserLogEntry = async (logData, loggerPrefix) => {
   const { user, teacherStudent, accessType, action, file } = logData
@@ -83,7 +83,6 @@ export const getUserLogs = async (user, searchValue = '') => {
       if (logElement.type !== 'logElement') continue
       // If searchValue, check for matches
       if (searchValue) {
-        console.log(typeof searchValue)
         logger('info', [loggerPrefix, `searchValue: ${searchValue}`, 'checking for matches'])
         if (logElement.user.name.toLowerCase() === searchValue.toLowerCase()) {
           userLogs.push(logElement)

@@ -1,14 +1,14 @@
-import { logger } from "@vtfk/logger"
-import { getUserData } from "./get-user-data"
-import { getMockDocuments } from "$lib/call-archive/mock-data"
-import { getAzfArchiveDocuments } from "$lib/call-archive/azf-archive"
-import { hasFileAccessForStudent } from "$lib/permissions"
-import { createUserLogEntry } from "./user-logs"
-import { env } from "$env/dynamic/private"
+import { logger } from '@vtfk/logger'
+import { getUserData } from './get-user-data'
+import { getMockDocuments } from '$lib/call-archive/mock-data'
+import { getAzfArchiveDocuments } from '$lib/call-archive/azf-archive'
+import { hasFileAccessForStudent } from '$lib/permissions'
+import { createUserLogEntry } from './user-logs'
+import { env } from '$env/dynamic/private'
 
 /**
- * 
- * @param {import("$lib/authentication").User} user 
+ *
+ * @param {import("$lib/authentication").User} user
  * @param {string} studentFeidenavn
  * @returns
  */
@@ -68,7 +68,7 @@ export const getStudentDocuments = async (user, studentFeidenavn) => {
   }
 
   logger('info', [loggerPrefix, `Adding viewFiles permission to all ${result.documents.length} documents' files, for easier frontend handling`])
-  const { access, type } = hasFileAccessForStudent(teacherStudent, loggerPrefix)
+  const { access, type } = hasFileAccessForStudent(user, teacherStudent, loggerPrefix)
   result.documents = result.documents.map(doc => {
     return {
       ...doc,

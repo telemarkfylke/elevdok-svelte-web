@@ -1,16 +1,16 @@
-import { env } from "$env/dynamic/private"
-import { getInternalCache } from "$lib/internal-cache"
-import { closeMongoClient, getMongoClient } from "$lib/mongo-client"
-import { logger } from "@vtfk/logger"
+import { env } from '$env/dynamic/private'
+import { getInternalCache } from '$lib/internal-cache'
+import { closeMongoClient, getMongoClient } from '$lib/mongo-client'
+import { logger } from '@vtfk/logger'
 
 const isGuid = (value) => {
   return String(value).match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[4][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/)
 }
 
 /**
- * 
- * @param {import("$lib/authentication").User} user 
- * @returns 
+ *
+ * @param {import("$lib/authentication").User} user
+ * @returns
  */
 export const getAdminImpersonation = (user) => {
   if (!user.hasAdminRole) throw new Error('You do not have permission to do this')
@@ -20,16 +20,16 @@ export const getAdminImpersonation = (user) => {
 }
 
 /**
- * 
- * @param {import("$lib/authentication").User} user 
- * @param {string} target 
- * @param {"larer" | "leder"} type 
+ *
+ * @param {import("$lib/authentication").User} user
+ * @param {string} target
+ * @param {"larer" | "leder"} type
  * @returns
  */
 export const setAdminImpersonation = async (user, target, type) => {
   if (!user.hasAdminRole) throw new Error('You do not have permission to do this')
   if (typeof target !== 'string') throw new Error('target må værra string')
-    if (!target.endsWith(`@${env.FEIDENAVN_SUFFIX}`) && !isGuid(target)) throw new Error(`Target må ende på @${env.FEIDENAVN_SUFFIX} eller værra en guid`)
+  if (!target.endsWith(`@${env.FEIDENAVN_SUFFIX}`) && !isGuid(target)) throw new Error(`Target må ende på @${env.FEIDENAVN_SUFFIX} eller værra en guid`)
   if (!['larer', 'leder'].includes(type)) throw new Error('type må værra "larer" eller "leder"')
   const internalCache = getInternalCache()
   internalCache.set(`${user.principalId}-impersonation`, { target, type })
@@ -59,8 +59,8 @@ export const setAdminImpersonation = async (user, target, type) => {
 }
 
 /**
- * 
- * @param {import("$lib/authentication").User} user 
+ *
+ * @param {import("$lib/authentication").User} user
  */
 export const deleteAdminImpersonation = (user) => {
   if (!user.hasAdminRole) throw new Error('You do not have permission to do this')
