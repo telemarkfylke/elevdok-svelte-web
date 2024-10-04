@@ -5,6 +5,10 @@ import { logger } from '@vtfk/logger'
 import { ObjectId } from 'mongodb'
 import { getCurrentSchoolYear } from './get-user-data'
 
+const escapeRegex = (str) => {
+  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&')
+}
+
 export const createUserLogEntry = async (logData, loggerPrefix) => {
   const { user, teacherStudent, accessType, action, file } = logData
   if (!action) throw new Error('Missing required parameter "action"')
@@ -66,8 +70,103 @@ export const createUserLogEntry = async (logData, loggerPrefix) => {
   }
 }
 
-export const getUserLogs = async (user, searchValue = '') => {
-  const loggerPrefix = `getUserLogs - user: ${user.principalName} - searchValue: ${searchValue}`
+export const logStudentSearch = async (user, searchName) => {
+  const loggerPrefix = `logStudentSearch - user: ${user.principalName} - searchName: ${searchName}`
+  logger('info', [loggerPrefix, 'New student search'])
+  if (!user.hasAdminRole) {
+    logger('warn', [loggerPrefix, 'Missing required admin access to log student search'])
+    throw new Error('You do not have permission to do this')
+  }
+  if (!searchName) {
+    searchName = ''
+  }
+  if (env.MOCK_API === 'true') {
+    logger('info', [loggerPrefix, 'MOCK_API is true, getting logs from mockDb'])
+    const students = []
+    const mockDb = getMockDb()
+    const dbKeys = mockDb.keys()
+    for (const key of dbKeys) {
+      const logElement = mockDb.get(key)
+      if (logElement.type !== 'logElement') continue
+      if (logElement.student.name.toLowerCase().startsWith(searchName.toLowerCase())) {
+        if (students.some(student => student.elevnummer === logElement.student.elevnummer)) continue
+        students.push(logElement.student)
+      }
+    }
+    logger('info', [loggerPrefix, 'MOCK_API is true', `Found ${students.length} students with searchName ${searchName} in mockdb - returning`])
+    return students
+  }
+  // Get top 50 logs from mongodb
+  try {
+    const mongoClient = await getMongoClient()
+
+    const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)
+    
+    const escapedSearchName = escapeRegex(searchName)
+    const regex = new RegExp(`^${escapedSearchName}`, 'i')
+    const distinctStudents = await collection.aggregate([{ $group: { _id: { elevnummer: '$student.elevnummer', name: '$student.name', feidenavn: '$student.feidenavn' } } }, { $match: { '_id.name': { $regex: regex } } }]).sort({ '_id.name': 1 }).limit(15).toArray()
+
+    logger('info', [loggerPrefix, `Found ${distinctStudents.length} students - returning`])
+    return distinctStudents.map(student => student._id)
+  } catch (error) {
+    if (error.toString().startsWith('MongoTopologyClosedError')) {
+      logger('warn', 'Oh no, topology is closed! Closing client')
+      closeMongoClient()
+    }
+    throw error
+  }
+}
+
+export const logUserSearch = async (user, searchName) => {
+  const loggerPrefix = `logUserSearch - user: ${user.principalName} - searchName: ${searchName}`
+  logger('info', [loggerPrefix, 'New student search'])
+  if (!user.hasAdminRole) {
+    logger('warn', [loggerPrefix, 'Missing required admin access to log user search'])
+    throw new Error('You do not have permission to do this')
+  }
+  if (!searchName) {
+    searchName = ''
+  }
+  if (env.MOCK_API === 'true') {
+    logger('info', [loggerPrefix, 'MOCK_API is true, getting logs from mockDb'])
+    const users = []
+    const mockDb = getMockDb()
+    const dbKeys = mockDb.keys()
+    for (const key of dbKeys) {
+      const logElement = mockDb.get(key)
+      if (logElement.type !== 'logElement') continue
+      if (logElement.user.name.toLowerCase().startsWith(searchName.toLowerCase())) {
+        if (users.some(user => user.principalId === logElement.user.principalId)) continue
+        users.push(logElement.user)
+      }
+    }
+    logger('info', [loggerPrefix, 'MOCK_API is true', `Found ${students.length} users with searchName ${searchName} in mockdb - returning`])
+    return users.map(user => { return { name: user.name, principalId: user.principalId, principalName: user.principalName } })
+  }
+  // Get top 50 logs from mongodb
+  try {
+    const mongoClient = await getMongoClient()
+
+    const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)
+    
+    const escapedSearchName = escapeRegex(searchName)
+    const regex = new RegExp(`^${escapedSearchName}`, 'i')
+    const distinctUsers = await collection.aggregate([{ $group: { _id: { principalId: '$user.principalId', name: '$user.name', principalName: '$user.principalName' } } }, { $match: { '_id.name': { $regex: regex } } }]).sort({ '_id.name': 1 }).limit(15).toArray()
+
+    logger('info', [loggerPrefix, `Found ${distinctUsers.length} users - returning`])
+    return distinctUsers.map(user => user._id)
+  } catch (error) {
+    if (error.toString().startsWith('MongoTopologyClosedError')) {
+      logger('warn', 'Oh no, topology is closed! Closing client')
+      closeMongoClient()
+    }
+    throw error
+  }
+}
+
+export const getUserLogs = async (user, filter) => {
+  const { studentNumber, userPrincipalId, documentNumber } = filter
+  const loggerPrefix = `getUserLogs - user: ${user.principalName} - filter: { elevnummer: ${studentNumber}, userPrincipalId: ${userPrincipalId}, documentNumber: ${documentNumber} }`
   if (!user.hasAdminRole) {
     logger('warn', [loggerPrefix, 'Missing required admin access to get user logs'])
     throw new Error('You do not have permission to do this')
@@ -75,67 +174,52 @@ export const getUserLogs = async (user, searchValue = '') => {
   logger('info', [loggerPrefix, 'Getting user logs from db'])
   if (env.MOCK_API === 'true') {
     logger('info', [loggerPrefix, 'MOCK_API is true, getting logs from mockDb'])
-    const userLogs = []
+    let userLogs = []
     const mockDb = getMockDb()
     const dbKeys = mockDb.keys()
     for (const key of dbKeys) {
       const logElement = mockDb.get(key)
       if (logElement.type !== 'logElement') continue
-      // If searchValue, check for matches
-      if (searchValue) {
-        logger('info', [loggerPrefix, `searchValue: ${searchValue}`, 'checking for matches'])
-        if (logElement.user.name.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.user.principalName.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.user.principalId === searchValue) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.user.impersonating && logElement.user.impersonating.target.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.student.name.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.student.feidenavn.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.file && logElement.file.documentNumber.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.file && logElement.file.title.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-        if (logElement.file && logElement.file.id.toLowerCase() === searchValue.toLowerCase()) {
-          userLogs.push(logElement)
-          continue
-        }
-      } else {
-        // If not searchValue, return all top 30 or something
-        userLogs.push(logElement)
-      }
+      userLogs.push(logElement)
     }
+
+    // then we apply filters
+    if (studentNumber) {
+      userLogs = userLogs.filter(log => log.student.elevnummer === studentNumber)
+    }
+    if (userPrincipalId) {
+      userLogs = userLogs.filter(log => log.user.principalId === userPrincipalId)
+    }
+    if (documentNumber) {
+      userLogs = userLogs.filter(log => log.file && log.file.documentNumber === documentNumber)
+    }
+
     logger('info', [loggerPrefix, 'MOCK_API is true', `Found ${userLogs.length} log entries in mockdb - returning`])
     return userLogs.sort((a, b) => { return new Date(b.timestamp) - new Date(a.timestamp) })
   }
-  // Get top 50 logs from mongodb
+  // Get logs from mongodb
   try {
     const mongoClient = await getMongoClient()
     const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)
-    // IMPLEMENT SEARCH FUNCTION AS WELL
-    const top50 = await collection.find().sort({ _id: -1 }).limit(50).toArray() // sort({_id:-1}) returns newest first
-    logger('info', [loggerPrefix, `Found ${top50.length} recent log entries - returning`])
-    return top50
+    if (!studentNumber && !userPrincipalId && !documentNumber) {
+      logger('info', [loggerPrefix, 'No filters applied, returning 50 most recent logs'])
+      const top50 = await collection.find().sort({ _id: -1 }).limit(50).toArray() // sort({_id:-1}) returns newest first
+      return top50
+    }
+    const query = {}
+    if (studentNumber) {
+      query['student.elevnummer'] = studentNumber
+    }
+    if (userPrincipalId) {
+      query['user.principalId'] = userPrincipalId
+    }
+    if (documentNumber) {
+      query['file.documentNumber'] = documentNumber
+    }
+    logger('info', [loggerPrefix, 'Querying for logs with query', query])
+    const logs = await collection.find(query).sort({ _id: -1 }).toArray() // sort({_id:-1}) returns newest first
+    logger('info', [loggerPrefix, `Found ${logs.length} log entries - returning`])
+    return logs
   } catch (error) {
     if (error.toString().startsWith('MongoTopologyClosedError')) {
       logger('warn', 'Oh no, topology is closed! Closing client')
