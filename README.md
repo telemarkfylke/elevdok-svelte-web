@@ -39,6 +39,12 @@ Obs obs alt skal logges til mongodb
 - Leder / Rådgiver
 - Admin (samma som MinElev for å kunne mocke enkelt og greit - bare husk å logge til mongodb)
 
+## Leder / Rådgiver tilgang
+- Styres basert på Entra ID tilgangsgrupper. En per skole
+- Legg til en bruker i skolens tilgangsgruppe for å gi brukeren tilgang på alle dokumenter for skolen
+- Gruppenavn: A-TILGANG-ELEVDOK-LEDER-{SKOLEKORTNAVN}
+- Gruppebeskrivelse: Gruppe for å gi leder / rådgiver tilgang til {Skolenavn} i Elevdok
+- Gruppen må også legges til på enterprise appen, med rollen "Leder"
 
 # create-svelte
 

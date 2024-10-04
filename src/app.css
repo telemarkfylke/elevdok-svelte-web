@@ -46,7 +46,7 @@
 	--warning-color: rgb(188, 119, 38);
 	--warning-background-color: rgb(242, 228, 212);
 	--success-color: rgb(47, 117, 66);
-	--success-background-color: rgb(242, 228, 212);
+	--success-background-color: rgb(213, 227, 217);
 
 	/* SIZES */
 	--font-size-root: 1rem;
@@ -101,6 +101,10 @@ a, a:visited {
 a:hover {
   color: var(--link-color-hover);
 }
+a span.material-symbols-outlined {
+	text-decoration: none;
+	vertical-align: text-bottom;
+}
 
 /* See button too se a.button class */
 
@@ -136,13 +140,25 @@ button:hover, a.button:hover {
 	background-color: var(--primary-color-20);
 }
 
-button.filled, a.button.filled {
+button:active, a.button:active {
+	background-color: var(--primary-color-30);
+}
+
+button.filled, a.button.filled, .button-input button {
 	background-color: var(--primary-color);
 	color: var(--font-color-inverted);
 }
 
-button.filled:hover, a.button.filled:hover {
+button.filled:hover, a.button.filled:hover, .button-input button:hover {
 	background-color: var(--primary-color-80);
+}
+
+button.filled:active, a.button.filled:active, .button-input button:active {
+	background-color: var(--primary-color-90);
+}
+
+button.squared {
+	border-radius: 0.4rem;
 }
 
 button:disabled, button:disabled:hover {
@@ -172,7 +188,11 @@ button.action:hover, a.button.action:hover {
 	background-color: rgba(0, 0, 0, 0.1);
 }
 
-/* Is the one below really necessary... yaeh, so you don't have to remember what to styke yourself - BUT remember hover state when designing */
+button.action:active, a.button.action:active {
+	background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Is the one below really necessary... yaeh, so you don't have to remember what to style yourself - BUT remember hover state when designing */
 button.blank, button.blank:hover, a.button.blank, a.button.blank:hover {
 	height: auto;
 	border: 0px;
@@ -182,9 +202,10 @@ button.blank, button.blank:hover, a.button.blank, a.button.blank:hover {
 	background-color: transparent;
 	text-decoration: none;
 	color: var(--font-color);
-} 
+}
 
 button.link {
+	display: block;
 	cursor: pointer;
 	color: var(--link-color);
   text-decoration: underline;
@@ -204,6 +225,12 @@ button.link:hover {
 	color: var(--link-color-hover);
 }
 
+button.link span.material-symbols-outlined {
+	text-decoration: none;
+	vertical-align: text-bottom;
+	display: inline-block;
+}
+
 /* Input elements */
 input {
 	font-family: inherit;
@@ -215,35 +242,69 @@ input {
 	border-radius: 0.4rem;
 }
 
-input:hover, .icon-input:hover {
-	background-color: var(--primary-color-10);
-}
-
-.icon-input:hover input {
-	background-color: var(--primary-color-10);
-}
-
-.icon-input {
+.icon-input, .button-input, .label-input {
 	display: flex;
 	align-items: center;
 	border: 2px solid var(--primary-color);
 	border-radius: 0.4rem;
 }
 
-.icon-input input {
-	padding: 0px 16px 0px 0px;
+input:disabled, .icon-input.disabled, .button-input.disabled, .label-input.disabled {
+	color: grey;
+	cursor: not-allowed;
+	border-color: grey;
+}
+
+input:hover, .icon-input:hover, .button-input:hover, .label-input:hover {
+	background-color: var(--primary-color-10);
+}
+
+input:disabled:hover, .icon-input.disabled:hover, .button-input.disabled:hover, .label-input.disabled_hover {
+	background-color: var(--primary-background-color);
+}
+
+.icon-input:hover input, .button-input:hover input, .label-input:hover input {
+	background-color: var(--primary-color-10);
+}
+
+.icon-input.disabled:hover input, .button-input.disabled:hover input, .label-input.disabled:hover input {
+	background-color: var(--primary-background-color);
+}
+
+input:focus-visible, .icon-input:focus-within, .button-input:focus-within, .label-input:focus-within {
+	outline: 4px solid var(--primary-color);
+	outline-offset: -4px;
+}
+
+.icon-input input:focus-visible, .button-input input:focus-visible, .label-input input:focus-visible {
+	border: 0px solid var(--primary-color);
+	outline: 0px;
+}
+
+.button-input button {
+	align-self: stretch;
+	border-top: 0px;
+	border-right: 0px;
+	border-bottom: 0px;
+	border: 0px solid var(--primary-color);
+	border-radius: 0rem;
+}
+
+.button-input button:focus-visible {
+	outline: 6px solid var(--primary-color);
+	outline-offset: 3px;
+}
+
+.button-input input, .label-input input {
 	border: 0px solid var(--primary-color);
 	flex-grow: 1;
 }
 
-.icon-input:focus-within {
-	outline: 4px solid var(--primary-color);
-	outline-offset: 1px;
-}
-
-.icon-input input:focus-visible {
+/* Icon gets extra padding */
+.icon-input input {
+	padding: 0px 16px 0px 0px;
 	border: 0px solid var(--primary-color);
-	outline: 0px;
+	flex-grow: 1;
 }
 
 .icon-input span {
@@ -251,12 +312,20 @@ input:hover, .icon-input:hover {
 	font-size: 1.5rem;
 }
 
-.icon-input.round {
+.icon-input.round, .button-input.round, .label-input.round {
 	border-radius: 3rem;
 	padding: 0rem var(--spacing);
 }
 
-.icon-input.round input {
+.button-input.round, .icon-input.button-input.round, .label-input.button-input.round {
+	padding: 0rem 0rem 0rem var(--spacing);
+}
+
+.button-input.round button {
+	border-radius: 0rem 3rem 3rem 0rem;
+}
+
+.icon-input.round input, .button-input.round input, .label-input.round input {
 	border-radius: 3rem;
 }
 
@@ -269,26 +338,16 @@ input:hover, .icon-input:hover {
 	font-size: var(--font-size-small);
 	position: absolute;
 	padding: 0rem 0rem;
-	top: -1.0625rem;
-	top: -1.375rem;
+	top: -1.5rem;
+}
+
+.label-input.required label::after {
+	content: " *";
+	color: var(--error-color);
 }
 
 .label-input:focus-within label {
 	font-weight: bold;
-	top: -1.375rem;
-}
-
-.label-input.icon-input label {
-	font-size: var(--font-size-small);
-	position: absolute;
-	padding: 0rem 0rem;
-	top: -1.1875rem;
-	top: -1.5rem;
-}
-
-.label-input.icon-input:focus-within label {
-	font-weight: bold;
-	top: -1.5rem;
 }
 
 input[type="radio"], input[type="checkbox"] {
@@ -296,6 +355,11 @@ input[type="radio"], input[type="checkbox"] {
 	transform: scale(1.5);
 	accent-color: var(--primary-color-80);
 	margin: var(--spacing-small);
+}
+
+input[type="radio"]:focus-visible, input[type="checkbox"]:focus-visible {
+	outline: 4px solid var(--primary-color);
+	outline-offset: 1px;
 }
 
 textarea {
@@ -337,6 +401,11 @@ select:hover {
 	position: absolute;
 	padding: 0rem 0rem;
 	top: -1.375rem;
+}
+
+.label-select.required label::after {
+	content: " *";
+	color: red;
 }
 
 .label-select:focus-within label {
