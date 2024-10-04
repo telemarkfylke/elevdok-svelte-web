@@ -101,7 +101,7 @@ export const logStudentSearch = async (user, searchName) => {
     const mongoClient = await getMongoClient()
 
     const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)
-    
+
     const escapedSearchName = escapeRegex(searchName)
     const regex = new RegExp(`^${escapedSearchName}`, 'i')
     const distinctStudents = await collection.aggregate([{ $group: { _id: { elevnummer: '$student.elevnummer', name: '$student.name', feidenavn: '$student.feidenavn' } } }, { $match: { '_id.name': { $regex: regex } } }]).sort({ '_id.name': 1 }).limit(15).toArray()
@@ -140,7 +140,7 @@ export const logUserSearch = async (user, searchName) => {
         users.push(logElement.user)
       }
     }
-    logger('info', [loggerPrefix, 'MOCK_API is true', `Found ${students.length} users with searchName ${searchName} in mockdb - returning`])
+    logger('info', [loggerPrefix, 'MOCK_API is true', `Found ${users.length} users with searchName ${searchName} in mockdb - returning`])
     return users.map(user => { return { name: user.name, principalId: user.principalId, principalName: user.principalName } })
   }
   // Get top 50 logs from mongodb
@@ -148,7 +148,7 @@ export const logUserSearch = async (user, searchName) => {
     const mongoClient = await getMongoClient()
 
     const collection = mongoClient.db(env.MONGODB_DB_NAME).collection(`${env.MONGODB_LOGS_COLLECTION}-${getCurrentSchoolYear('-')}`)
-    
+
     const escapedSearchName = escapeRegex(searchName)
     const regex = new RegExp(`^${escapedSearchName}`, 'i')
     const distinctUsers = await collection.aggregate([{ $group: { _id: { principalId: '$user.principalId', name: '$user.name', principalName: '$user.principalName' } } }, { $match: { '_id.name': { $regex: regex } } }]).sort({ '_id.name': 1 }).limit(15).toArray()
