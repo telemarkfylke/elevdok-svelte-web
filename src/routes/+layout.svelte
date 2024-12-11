@@ -2,6 +2,7 @@
   import '../app.css' // Add global css (and make it hot reload in dev)
   import '../style.css' // Add custom css (and make it hot reload in dev)
   import logo from '$lib/assets/logo.svg'
+  import julehund from '$lib/assets/julehund.png'
   import logoDarkmode from '$lib/assets/logo-darkmode.svg'
   import { page } from '$app/stores'
   import { navigating } from '$app/stores'
@@ -164,7 +165,6 @@
       </div>
     {/if}
 
-
     <div class="contentContainer">
       <div class="content">
         {#if $navigating}
@@ -179,7 +179,8 @@
           </div>
         {/if}
         {#if data.maintenanceMode}
-          <h3>ElevDok er under oppussing grunnet fylkesdeling</h3>
+          <h3>ElevDok har julestengt grunnet bytte av HR-system.</h3>
+          <img style="max-width:90vw;" src={julehund} alt="Julehund" />
         {:else}
           <slot></slot>
         {/if}
