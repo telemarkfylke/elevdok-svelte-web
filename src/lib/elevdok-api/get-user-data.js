@@ -3,6 +3,7 @@ import { fintTeacher } from '$lib/fintfolk-api/teacher'
 import { fintSchool } from '$lib/fintfolk-api/school'
 import { logger } from '@vtfk/logger'
 import { getLeaderAccess } from './leder-access'
+import vtfkSchoolsInfo from 'vtfk-schools-info'
 
 const allowedUndervisningsforholdDescription = ['Adjunkt', 'Adjunkt m/till utd', 'Adjunkt 1', 'Lærer', 'Lærer-', 'Lektor', 'Lektor m/till utd', 'Lektor 1']
 
@@ -37,6 +38,24 @@ export const getCurrentSchoolYear = (delimiter = '/') => {
  * @returns {MiniSchool} repackedSchool
  */
 export const repackMiniSchool = (school, kontaktlarer) => {
+  if (!school.skolenummer) {
+    logger('error', ['Could not find schoolNumber for school in FINT!'])
+    throw new Error('Could not find schoolNumber for school in FINT!')
+  }
+  // Sjekker om skolen har et kortnavn, hvis ikke slår vi opp i vtfk-schools-info for å finne det basert på skolenummer
+  if (!school.kortnavn) {
+    const schoolsInfo = vtfkSchoolsInfo({ schoolNumber: school.skolenummer })
+    if (schoolsInfo.length === 1) {
+      if (!schoolsInfo[0].shortName) {
+        logger('error', [`Could not find shortName for school with schoolNumber "${school.skolenummer}" in vtfk-schools-info!`])
+        throw new Error(`Could not find shortName for school with schoolNumber "${school.skolenummer}" in vtfk-schools-info!`)
+      }
+      school.kortnavn = schoolsInfo[0].shortName // Sett kortnavn til kortnavnet i vtfk-schools-info dersom vi fant en skole på skolenummeret
+    } else {
+      logger('error', [`Could not find school with schoolNumber "${school.skolenummer}" in vtfk-schools-info!`])
+      throw new Error(`Could not find school with schoolNumber "${school.skolenummer}" in vtfk-schools-info!`)
+    }
+  }
   const kortkortnavn = school.kortnavn.indexOf('-') ? school.kortnavn.substring(school.kortnavn.indexOf('-') + 1) : school.kortnavn
   return {
     kortkortnavn,
@@ -290,7 +309,21 @@ export const getUserData = async (user, maskSsn = true) => {
       }
       logger('info', [loggerPrefix, `Got data for school ${schoolAccess.schoolName} (${schoolAccess.schoolNumber}) from FINT`])
 
-      school.kortnavn = school.organisasjon?.kortnavn || 'SKOLE' // Simple tweak to make sure we have a shortname
+      // If no shortname, try to find it in vtfk-schools-info
+      if (school.skolenummer && !school.kortnavn) {
+        const schoolsInfo = vtfkSchoolsInfo({ schoolNumber: school.skolenummer })
+        if (schoolsInfo.length === 1) {
+          if (!schoolsInfo[0].shortName) {
+            logger('error', [loggerPrefix, `Could not find shortName for school with schoolNumber "${school.skolenummer}" in vtfk-schools-info!`])
+            throw new Error(`Could not find shortName for school with schoolNumber "${school.skolenummer}" in vtfk-schools-info!`)
+          }
+          school.kortnavn = schoolsInfo[0].shortName // Sett kortnavn til kortnavnet i vtfk-schools-info dersom vi fant en skole på skolenummeret
+        } else {
+          logger('info', [loggerPrefix, `Could not find school with schoolNumber "${school.skolenummer}" in vtfk-schools-info. Simply setting shortname to "SKOLE"`])
+          school.kortnavn = school.organisasjon?.kortnavn || 'SKOLE' // Sett kortnavn til SKOLE dersom vi ikke finner noe annet
+        }
+      }
+      
       const miniSchool = repackMiniSchool(school, false)
 
       // Dytt inn alle elevene på skolen
