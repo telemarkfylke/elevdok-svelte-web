@@ -323,7 +323,7 @@ export const getUserData = async (user, maskSsn = true) => {
           school.kortnavn = school.organisasjon?.kortnavn || 'SKOLE' // Sett kortnavn til SKOLE dersom vi ikke finner noe annet
         }
       }
-      
+
       const miniSchool = repackMiniSchool(school, false)
 
       // Dytt inn alle elevene på skolen
