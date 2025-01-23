@@ -6,6 +6,9 @@ import { logger } from '@vtfk/logger'
 export const repackP360Document = (document, feidenavn, source, sourceName) => {
   if (!document || !feidenavn || !source || !sourceName) throw new Error('Missing required parameter "document" "feidenavn", "source", or "sourceName')
 
+  // First verify that the document has Contacts and Files as array
+  if (!Array.isArray(document.Contacts)) document.Contacts = []
+  if (!Array.isArray(document.Files)) document.Files = []
   const repacked = {
     title: document.Title,
     feidenavn,
