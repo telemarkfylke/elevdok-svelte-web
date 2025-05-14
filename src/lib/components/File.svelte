@@ -15,7 +15,6 @@
   let base64Data
 
   const getFileData = async () => {
-    console.log("hallo")
     errorMessage = ""
     fileLoading = true
     try {
