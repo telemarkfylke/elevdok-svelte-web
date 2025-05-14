@@ -1,7 +1,7 @@
 import { logger } from '@vtfk/logger'
 import { getUserData } from './get-user-data'
 import { hasFileAccessForStudent } from '$lib/permissions'
-import { getAzfArchiveFile } from '$lib/call-archive/azf-archive'
+import { getAzfArchiveDocuments, getAzfArchiveFile } from '$lib/call-archive/azf-archive'
 import { mockFile } from '$lib/call-archive/mock-data'
 import { createUserLogEntry } from './user-logs'
 import { env } from '$env/dynamic/private'
@@ -78,6 +78,18 @@ export const getFile = async (user, studentFeidenavn, sourceId, fileId) => {
       documentNumber: '24/mock1234'
     }
   } else if (sourceId === 'mainArchive') {
+    // Her må vi sjekke om at filen faktisk tilhører et dokument i elevmappen
+    logger('info', [loggerPrefix, 'Fetching student documents from main archive to validate that fileId belongs to a document in elevmappen'])
+    const { documents } = await getAzfArchiveDocuments(teacherStudent.fodselsnummer, studentFeidenavn, loggerPrefix)
+    logger('info', [loggerPrefix, `Got ${documents.length} student documents from main archive, validating that fileId is in one of them`])
+    const document = documents.find(doc => Array.isArray(doc.files) && doc.files.some(file => file.id.toString() === fileId.toString()))
+
+    if (!document) {
+      logger('warn', [loggerPrefix, `FileId ${fileId} does not exist in any of the ${sourceId} documents for student ${studentFeidenavn}`])
+      throw new Error('Du har ikke tilgang til denne filen')
+    }
+    logger('info', [loggerPrefix, `FileId ${fileId} exists in document ${document.documentNumber} for student ${studentFeidenavn} - fetching file`])
+
     try {
       const { base64, metadata } = await getAzfArchiveFile(fileId, loggerPrefix)
       result.base64 = base64

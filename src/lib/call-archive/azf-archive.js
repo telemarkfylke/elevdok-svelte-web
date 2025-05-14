@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private'
 import { getMsalToken } from '$lib/msal-token'
 import axios from 'axios'
 import { logger } from '@vtfk/logger'
+import { getInternalCache } from '$lib/internal-cache'
 
 export const repackP360Document = (document, feidenavn, source, sourceName) => {
   if (!document || !feidenavn || !source || !sourceName) throw new Error('Missing required parameter "document" "feidenavn", "source", or "sourceName')
@@ -48,6 +49,17 @@ export const getAzfArchiveDocuments = async (ssn, feidenavn, loggerPrefix) => {
     errors: []
   }
 
+  // Check cache for response and return if found
+  const internalCache = getInternalCache()
+  const cacheKey = `azf-archive-documents-${feidenavn}`
+  if (internalCache.has(cacheKey)) {
+    logger('info', [loggerPrefix, 'Found documents in cache quick returning'])
+    const cachedResult = internalCache.get(cacheKey)
+    result.documents = cachedResult.documents
+    result.errors = cachedResult.errors
+    return result
+  }
+
   const accessToken = await getMsalToken({ scope: env.AZF_ARCHIVE_SCOPE })
   const caseNumbers = []
 
@@ -64,8 +76,13 @@ export const getAzfArchiveDocuments = async (ssn, feidenavn, loggerPrefix) => {
     const { data } = await axios.post(`${env.AZF_ARCHIVE_URL}/Archive`, elevmappePayload, { headers: { Authorization: `Bearer ${accessToken}` } })
 
     const allowedCaseStatuses = ['Under behandling', 'Avsluttet']
+    const allowedAccessGroups = ['VFK Robot', 'TFK Robot']
     logger('info', [loggerPrefix, `Filtering ${data.length} cases to where Status is one of`, allowedCaseStatuses])
-    const cases = data.filter(archiveCase => ['Under behandling', 'Avsluttet'].includes(archiveCase.Status))
+    const cases = data.filter(archiveCase => {
+      const allowedStatus = allowedCaseStatuses.includes(archiveCase.Status)
+      const allowedAccessGroup = allowedAccessGroups.includes(archiveCase.AccessGroup)
+      return allowedStatus && allowedAccessGroup
+    })
 
     if (cases.length > 1) logger('info', [loggerPrefix, `Found several (${cases.length}) elevmapper`])
     if (cases.length === 0) {
@@ -96,14 +113,19 @@ export const getAzfArchiveDocuments = async (ssn, feidenavn, loggerPrefix) => {
       logger('info', [loggerPrefix, `Filtering ${data.length} documents to where StatusCode is one of`, allowedDocumentStatuses])
       const caseDocuments = data.filter(doc => allowedDocumentStatuses.includes(doc.StatusCode))
       logger('info', [loggerPrefix, `Adding ${caseDocuments.length} documents to result`])
+
       result.documents.push(...caseDocuments)
     } catch (error) {
       logger('info', [loggerPrefix, `Failed when documents for Case: ${caseNumber}`, error.response?.data || error.stack || error.toString()])
       result.errors.push(`Feilet ved henting dokumenter for sak ${caseNumber}. Feilmld: ${error.toString()}`)
     }
   }
-  logger('info', [loggerPrefix, `Found ${result.documents.length} documents. Repacking result, and returning.`])
+  logger('info', [loggerPrefix, `Found ${result.documents.length} documents. Repacking result, caching and returning.`])
   result.documents = result.documents.map(doc => repackP360Document(doc, feidenavn, 'mainArchive', env.MAIN_SOURCE_NAME))
+
+  // Cache the result for 10 minutes
+  internalCache.set(cacheKey, result, 600)
+
   return result
 }
 
