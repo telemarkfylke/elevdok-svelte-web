@@ -1,6 +1,6 @@
 {
   "name": "elevdok-svelte-web",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "private": true,
   "scripts": {
     "dev": "vite dev",
@@ -12,7 +12,7 @@
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.0.0",
     "@sveltejs/adapter-node": "^5.0.1",
-    "@sveltejs/kit": "^2.10.1",
+    "@sveltejs/kit": "^2.21.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
     "svelte": "^4.2.7",
     "svelte-check": "^3.6.0",
@@ -24,7 +24,7 @@
     "@azure/msal-node": "^2.9.1",
     "@vtfk/encryption": "^1.0.3",
     "@vtfk/logger": "^6.3.3",
-    "axios": "^1.7.2",
+    "axios": "^1.9.0",
     "mongodb": "^6.8.0",
     "node-cache": "^5.1.2",
     "vtfk-schools-info": "^3.4.2"
