@@ -5,7 +5,7 @@ import { logger } from '@vtfk/logger'
 import { getLeaderAccess } from './leder-access'
 import vtfkSchoolsInfo from 'vtfk-schools-info'
 
-const allowedUndervisningsforholdDescription = ['Adjunkt', 'Adjunkt m/till utd', 'Adjunkt 1', 'Lærer', 'Lærer-', 'Lektor', 'Lektor m/till utd', 'Lektor 1']
+const allowedUndervisningsforholdDescription = ['Adjunkt', 'Adjunkt m/till utd', 'Adjunkt 1', 'Lærer', 'Lærer-', 'Lektor', 'Lektor m/till utd', 'Lektor 1', 'Adjunkt med tilleggsutdanning', 'Lektor med tilleggsutdanning']
 
 const getSchoolYearFromDate = (date, delimiter = '/') => {
   // Hvis vi er etter 15 juli inneværende år, så swapper vi til current/next. Ellers bruker vi previous/current
